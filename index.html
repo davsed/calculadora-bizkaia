@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta name="google-site-verification" content="kQ_qeRcq6TS0w1aAPYr-FO5Ja_2j-e0NHuQ_T1J4gYg" />
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google-site-verification" content="kQ_qeRcq6TS0w1aAPYr-FO5Ja_2j-e0NHuQ_T1J4gYg" />
   <title>Calculadora precisa Bizkaia</title>
   <meta name="description" content="Calculadora precisa para calcular neto, bruto y coste empresa en Bizkaia con tramos de IRPF y cotizaciones exactas.">
   <style>
@@ -49,7 +49,6 @@
     <select id="pagas"><option value="12">12</option><option value="14">14</option></select>
 
     <label id="inputLabel">Coste total para la empresa (€):</label>
-    <!-- Cambiar a text para permitir comas -->
     <input id="entrada" type="text" placeholder="0,00">
 
     <div class="resultado" id="resultado"></div>
@@ -58,11 +57,9 @@
   </div>
 
   <script>
-    // Variables de cotización y tramos
     var SS_EMP = 0.314, SS_TRA = 0.0635;
     var lim = [0,17280,34560,51840,74030,102530,136670,199240,1e9];
     var tipo = [0.23,0.28,0.35,0.40,0.45,0.46,0.47,0.49];
-
     var entrada = document.getElementById('entrada');
     var resultado = document.getElementById('resultado');
     var grafico = document.getElementById('grafico');
@@ -72,7 +69,6 @@
     var pagas = document.getElementById('pagas');
     var inputLabel = document.getElementById('inputLabel');
 
-    // Listeners
     for (var i = 0; i < modoRadios.length; i++) {
       modoRadios[i].addEventListener('change', onModoChange);
       modoRadios[i].addEventListener('change', calcular);
@@ -107,17 +103,14 @@
     }
 
     function calcular() {
-      // Permitir coma decimal
       var raw = entrada.value.replace(/,/g, '.');
       var valor = parseFloat(raw);
       if (isNaN(valor)) { resultado.textContent = ''; clearChart(); return; }
 
-      // Obtener modo
       var modo;
       for (var x = 0; x < modoRadios.length; x++) {
         if (modoRadios[x].checked) { modo = modoRadios[x].value; break; }
       }
-      // Obtener periodo
       var periodo;
       for (var y = 0; y < periodoRadios.length; y++) {
         if (periodoRadios[y].checked) { periodo = periodoRadios[y].value; break; }
@@ -198,7 +191,6 @@
                          '<span style="color:#F44336;">' + (pctImpEmp*100).toFixed(1) + '% Impuestos Empresa</span>';
     }
 
-    // Iniciar after load
     window.onload = calcular;
   </script>
 </body>
