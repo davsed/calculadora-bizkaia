@@ -8,7 +8,6 @@
   <title>Calculadora precisa Bizkaia</title>
   <meta name="description" content="Calculadora precisa para calcular neto, bruto y coste empresa en Bizkaia con tramos de IRPF y cotizaciones exactas.">
   <style>
-    /* Wireframe responsive */
     body { font-family: Arial, sans-serif; background: #f5f5f5; color: #333; padding: 20px; margin: 0; }
     .container { width: 100%; max-width: 600px; margin: 0 auto; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 20px; box-shadow: 2px 2px 8px rgba(0,0,0,0.1); box-sizing: border-box; }
     h1 { font-size: 1.8em; text-align: center; margin: 0 0 10px; }
@@ -58,9 +57,30 @@
   </div>
 
   <script>
-    var SS_EMP = 0.314, SS_TRA = 0.0635;
-    var lim = [0,17280,34560,51840,74030,102530,136670,199240,1e9];
+    // --- CONSTANTES COTIZACIÓN 2025 (RGSS, contrato indefinido) ---
+
+    // Base máxima mensual y anual
+    const BASE_MAX_MENSUAL = 4909.50;             // €/mes
+    const BASE_MAX_ANUAL   = BASE_MAX_MENSUAL * 12;
+
+    // Tipos empresa
+    const T_CC_EMP   = 0.2360;  // Contingencias comunes
+    const T_DES_EMP  = 0.0550;  // Desempleo
+    const T_FOG_EMP  = 0.0020;  // FOGASA
+    const T_FP_EMP   = 0.0060;  // Formación profesional
+    const T_MEI_EMP  = 0.0067;  // MEI
+    const T_AT_EMP   = 0.0100;  // Accidentes trabajo (AJUSTA según tu CNAE)
+
+    // Tipos trabajador
+    const T_CC_TRA   = 0.0470;
+    const T_DES_TRA  = 0.0155;
+    const T_FP_TRA   = 0.0010;
+    const T_MEI_TRA  = 0.0013;
+
+    // Tramos IRPF Bizkaia (ya los tenías)
+    var lim  = [0,17280,34560,51840,74030,102530,136670,199240,1e9];
     var tipo = [0.23,0.28,0.35,0.40,0.45,0.46,0.47,0.49];
+
     var entrada = document.getElementById('entrada');
     var resultado = document.getElementById('resultado');
     var grafico = document.getElementById('grafico');
@@ -103,63 +123,94 @@
       return irpf;
     }
 
+    function cotizacionesEmpresa(baseCot) {
+      var cc  = baseCot * T_CC_EMP;
+      var des = baseCot * T_DES_EMP;
+      var fog = baseCot * T_FOG_EMP;
+      var fp  = baseCot * T_FP_EMP;
+      var mei = baseCot * T_MEI_EMP;
+      var at  = baseCot * T_AT_EMP;
+      var total = cc + des + fog + fp + mei + at;
+      return { cc: cc, desempleo: des, fogasa: fog, formacion: fp, mei: mei, at: at, total: total };
+    }
+
+    function cotizacionesTrabajador(baseCot) {
+      var cc  = baseCot * T_CC_TRA;
+      var des = baseCot * T_DES_TRA;
+      var fp  = baseCot * T_FP_TRA;
+      var mei = baseCot * T_MEI_TRA;
+      var total = cc + des + fp + mei;
+      return { cc: cc, desempleo: des, formacion: fp, mei: mei, total: total };
+    }
+
     function calcular() {
       var raw = entrada.value.replace(/,/g, '.');
       var valor = parseFloat(raw);
       if (isNaN(valor)) { resultado.textContent = ''; clearChart(); return; }
 
-      var modo;
+      var modo, periodo;
       for (var x = 0; x < modoRadios.length; x++) {
         if (modoRadios[x].checked) { modo = modoRadios[x].value; break; }
       }
-      var periodo;
       for (var y = 0; y < periodoRadios.length; y++) {
         if (periodoRadios[y].checked) { periodo = periodoRadios[y].value; break; }
       }
 
       var numPagas = parseInt(pagas.value, 10);
-      var brutoAnual, netoAnual, costeAnual;
+      var brutoAnual = 0, netoAnual = 0, costeAnual = 0;
 
       if (modo === 'coste') {
+        // Coste conocido -> buscar bruto por búsqueda binaria
         costeAnual = (periodo === 'mensual' ? valor * 12 : valor);
-        brutoAnual = costeAnual / (1 + SS_EMP);
-        var ssTrab = brutoAnual * SS_TRA;
-        var irpfTrab = calcularIRPF(brutoAnual);
-        netoAnual = brutoAnual - ssTrab - irpfTrab;
+        var low = 0, high = costeAnual, mid, total;
+        for (var it = 0; it < 50; it++) {
+          mid = (low + high) / 2;
+          var baseCotMid = Math.min(mid, BASE_MAX_ANUAL);
+          var empMid = cotizacionesEmpresa(baseCotMid).total;
+          total = mid + empMid;
+          if (total > costeAnual) high = mid; else low = mid;
+        }
+        brutoAnual = (low + high) / 2;
+      } else if (modo === 'bruto') {
+        brutoAnual = (periodo === 'mensual' ? valor * numPagas : valor);
       } else if (modo === 'neto') {
         netoAnual = (periodo === 'mensual' ? valor * numPagas : valor);
-        var b = netoAnual / (1 - SS_TRA - 0.23), delta = 1, cnt = 0;
-        while (Math.abs(delta) > 0.01 && cnt++ < 30) {
-          var ssT = b * SS_TRA;
+        // Buscar bruto que produce ese neto (tiene en cuenta IRPF y tope SS)
+        var b = netoAnual / (1 - (T_CC_TRA + T_DES_TRA + T_FP_TRA + T_MEI_TRA) - 0.25); // aproximación inicial
+        var delta = 1, cnt = 0;
+        while (Math.abs(delta) > 0.01 && cnt++ < 60) {
+          var baseCotB = Math.min(b, BASE_MAX_ANUAL);
+          var ssT = cotizacionesTrabajador(baseCotB).total;
           var irpfT = calcularIRPF(b);
           var netCalc = b - ssT - irpfT;
           delta = netoAnual - netCalc;
           b += delta * 0.5;
+          if (b < 0) { b = 0; break; }
         }
         brutoAnual = b;
-        costeAnual = brutoAnual * (1 + SS_EMP);
-      } else {
-        brutoAnual = (periodo === 'mensual' ? valor * numPagas : valor);
-        var ssTrab2 = brutoAnual * SS_TRA;
-        var irpfTrab2 = calcularIRPF(brutoAnual);
-        netoAnual = brutoAnual - ssTrab2 - irpfTrab2;
-        costeAnual = brutoAnual * (1 + SS_EMP);
       }
 
-      var ssTrabFinal = brutoAnual * SS_TRA;
+      // Una vez fijado el bruto, calculamos todo el resto de forma consistente
+      var baseCot = Math.min(brutoAnual, BASE_MAX_ANUAL);
+      var cotEmp = cotizacionesEmpresa(baseCot);
+      var cotTra = cotizacionesTrabajador(baseCot);
       var irpfFinal = calcularIRPF(brutoAnual);
 
+      netoAnual = brutoAnual - cotTra.total - irpfFinal;
+      costeAnual = brutoAnual + cotEmp.total;
+
       resultado.innerHTML =
-        'Bruto mensual: ' + (brutoAnual/numPagas).toFixed(2).replace('.', ',') + ' €<br>' +
+        'Bruto mensual: ' + (brutoAnual / numPagas).toFixed(2).replace('.', ',') + ' €<br>' +
         'Bruto anual: ' + brutoAnual.toFixed(2).replace('.', ',') + ' €<br><br>' +
-        'Coste mensual: ' + (costeAnual/12).toFixed(2).replace('.', ',') + ' €<br>' +
+        'Coste mensual: ' + (costeAnual / 12).toFixed(2).replace('.', ',') + ' €<br>' +
         'Coste anual: ' + costeAnual.toFixed(2).replace('.', ',') + ' €<br><br>' +
-        'Seguridad Social trab: ' + ssTrabFinal.toFixed(2).replace('.', ',') + ' €<br>' +
-        'IRPF trab: ' + irpfFinal.toFixed(2).replace('.', ',') + ' €<br>' +
-        'Neto mensual: ' + (netoAnual/numPagas).toFixed(2).replace('.', ',') + ' €<br>' +
+        'Seguridad Social trabajador: ' + cotTra.total.toFixed(2).replace('.', ',') + ' €<br>' +
+        'Seguridad Social empresa: ' + cotEmp.total.toFixed(2).replace('.', ',') + ' €<br>' +
+        'IRPF trabajador: ' + irpfFinal.toFixed(2).replace('.', ',') + ' €<br><br>' +
+        'Neto mensual: ' + (netoAnual / numPagas).toFixed(2).replace('.', ',') + ' €<br>' +
         'Neto anual: ' + netoAnual.toFixed(2).replace('.', ',') + ' €';
 
-      drawChart(costeAnual, brutoAnual, netoAnual);
+      drawChart(costeAnual, netoAnual, cotTra.total, cotEmp.total);
     }
 
     function clearChart() {
@@ -168,16 +219,16 @@
       legend.innerHTML = '';
     }
 
-    function drawChart(total, bruto, neto) {
-      var ssTrab = bruto * SS_TRA;
-      var irpfTrab = calcularIRPF(bruto);
-      var impuestosTrab = ssTrab + irpfTrab;
-      var impuestosEmp = total - bruto;
-      var pctNeto = neto / total;
+    function drawChart(total, neto, ssTrab, ssEmp) {
+      var impuestosTrab = ssTrab;
+      var impuestosEmp = ssEmp;
+      var pctNeto   = neto / total;
       var pctImpTrab = impuestosTrab / total;
-      var pctImpEmp = impuestosEmp / total;
+      var pctImpEmp  = impuestosEmp / total;
+
       var ctx = grafico.getContext('2d');
       ctx.clearRect(0, 0, grafico.width, grafico.height);
+
       var start = 0;
       var angle = pctNeto * 2 * Math.PI;
       ctx.beginPath(); ctx.moveTo(100,100); ctx.arc(100,100,80,start,start+angle); ctx.closePath(); ctx.fillStyle = '#81C784'; ctx.fill();
@@ -187,9 +238,11 @@
       start += angle;
       angle = pctImpEmp * 2 * Math.PI;
       ctx.beginPath(); ctx.moveTo(100,100); ctx.arc(100,100,80,start,start+angle); ctx.closePath(); ctx.fillStyle = '#F44336'; ctx.fill();
-      legend.innerHTML = '<span style="color:#81C784;">' + (pctNeto*100).toFixed(1) + '% Neto</span> — ' +
-                         '<span style="color:#388E3C;">' + (pctImpTrab*100).toFixed(1) + '% Impuestos Trabajador</span> — ' +
-                         '<span style="color:#F44336;">' + (pctImpEmp*100).toFixed(1) + '% Impuestos Empresa</span>';
+
+      legend.innerHTML =
+        '<span style="color:#81C784;">' + (pctNeto*100).toFixed(1) + '% Neto</span> — ' +
+        '<span style="color:#388E3C;">' + (pctImpTrab*100).toFixed(1) + '% Cotizaciones Trabajador</span> — ' +
+        '<span style="color:#F44336;">' + (pctImpEmp*100).toFixed(1) + '% Cotizaciones Empresa</span>';
     }
 
     window.onload = calcular;
