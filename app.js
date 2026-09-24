@@ -421,8 +421,8 @@
       ? 'La retención de IRPF es del ' + porcentajeEntero.format(ir.tipoRetencion) + minimo + ', según la tabla de retenciones de Bizkaia de ' + P.anio + '. '
       : 'Con este sueldo la tabla de retenciones de Bizkaia no aplica retención de IRPF. ';
     if (!ir.obligadoADeclarar) {
-      const sinObligacion = 'Con un solo pagador y hasta ' + importeRedondo(UMBRAL_DECLARAR) + ' brutos no hay obligación de hacer la declaración' +
-        (esSocio ? ' (si no hay otros ingresos, como dividendos)' : '');
+      const sinObligacion = 'Sin otros ingresos, hasta ' + importeRedondo(UMBRAL_DECLARAR) + ' brutos al año no hay obligación de hacer la declaración' +
+        (esSocio ? ' (tampoco con dividendos de hasta 1.600 € al año)' : '');
       if (ir.resultadoDeclaracion < -0.5) return retencion + sinObligacion + ', pero compensa hacerla: devolverían unos ' + euroRedondo(-ir.resultadoDeclaracion) + '.';
       if (ir.retencion > 0) return retencion + sinObligacion + ', así que el IRPF se queda en lo retenido.';
       return retencion + sinObligacion + ', así que no se paga IRPF.';

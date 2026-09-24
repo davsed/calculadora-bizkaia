@@ -10,7 +10,7 @@ https://davsed.github.io/calculadora-bizkaia/
 - **Cotizaciones de 2026** del trabajador y de la empresa: contingencias comunes, desempleo (indefinido o temporal), FOGASA, formación profesional, MEI y accidentes de trabajo, con la base máxima y la cotización de solidaridad.
 - **IRPF foral de Bizkaia**: bonificación de los rendimientos del trabajo, tarifa del 23 % al 49 %, minoración de cuota y deducción por hijos (entera o a medias con el otro progenitor).
 - **La nómina** de un mes normal y de la paga extra, con 12 o 14 pagas, con la retención de la tabla oficial de Bizkaia (y el mínimo del 2 % en contratos de menos de un año).
-- **La declaración de la renta**: lo que sale a pagar o a devolver comparando lo retenido con el IRPF del año. Hasta 20.000 € brutos con un solo pagador no hay obligación de declarar, así que el IRPF se queda en lo retenido salvo que compense declarar.
+- **La declaración de la renta**: lo que sale a pagar o a devolver comparando lo retenido con el IRPF del año. Con rendimientos del trabajo de hasta 20.000 € brutos al año y sin otros ingresos no hay obligación de declarar, aunque haya varios pagadores, así que el IRPF se queda en lo retenido salvo que compense declarar.
 
 No tiene en cuenta otros ingresos, aportaciones a EPSV o planes de pensiones, la tributación conjunta, la discapacidad ni otras deducciones.
 

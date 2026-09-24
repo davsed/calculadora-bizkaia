@@ -69,8 +69,8 @@
       // Deducción por descendientes (art. 79): 1.º, 2.º, 3.º, 4.º, 5.º y siguientes.
       deduccionDescendientes: [682, 844, 1421, 1680, 2195],
       deduccionMenor6: 394,
-      // Con solo rendimientos del trabajo (un pagador) hasta este bruto anual no hay
-      // obligación de declarar: se paga lo retenido en nómina.
+      // Con solo rendimientos del trabajo, de uno o varios pagadores, hasta este bruto anual
+      // no hay obligación de declarar (NF 13/2013, art. 102.2): se paga lo retenido en nómina.
       umbralObligacionDeclarar: 20000,
       // Tabla general de retenciones sobre el bruto anual. Cada fila: [hasta, % según el
       // número de descendientes: 0, 1, 2, 3, 4, 5 y más de 5].
