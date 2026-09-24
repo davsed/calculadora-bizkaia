@@ -3,268 +3,399 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Calculadora precisa Bizkaia</title>
-  <meta name="description" content="Calculadora precisa para calcular neto, bruto y coste empresa en Bizkaia con tramos de IRPF y cotizaciones exactas.">
+  <title>Calculadora sueldo neto Bizkaia 2026: bruto, neto y coste empresa</title>
+  <meta name="description" content="Calcula tu sueldo neto en Bizkaia en 2026 con el IRPF foral (bonificación del trabajo, minoración de cuota y deducción por hijos) y las cotizaciones de 2026. De bruto a neto, de neto a bruto y coste para la empresa.">
+  <link rel="canonical" href="https://davsed.github.io/calculadora-bizkaia/">
+  <meta name="theme-color" content="#f3f2ee" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_ES">
+  <meta property="og:url" content="https://davsed.github.io/calculadora-bizkaia/">
+  <meta property="og:title" content="Calculadora sueldo neto Bizkaia 2026">
+  <meta property="og:description" content="Bruto a neto, neto a bruto y coste para la empresa con el IRPF foral de Bizkaia y las cotizaciones de 2026.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Ctext x='16' y='22.5' font-family='Arial,sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='white'%3E%E2%82%AC%3C/text%3E%3C/svg%3E">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Calculadora sueldo neto Bizkaia 2026",
+    "url": "https://davsed.github.io/calculadora-bizkaia/",
+    "description": "Calculadora de sueldo neto, bruto y coste para la empresa en Bizkaia con el IRPF foral y las cotizaciones a la Seguridad Social de 2026.",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Web",
+    "inLanguage": "es",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+  }
+  </script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; color: #333; padding: 20px; margin: 0; }
-    .container { width: 100%; max-width: 600px; margin: 0 auto; background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 20px; box-shadow: 2px 2px 8px rgba(0,0,0,0.1); box-sizing: border-box; }
-    h1 { font-size: 1.8em; text-align: center; margin: 0 0 10px; }
-    h2 { font-size: 1.2em; text-align: center; color: #666; margin: 0 0 20px; }
-    .opciones { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; }
-    .opciones label { flex: 1 1 45%; }
-    .opciones input[type="radio"] { display: none; }
-    .opciones span { display: block; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background: #eaeaea; cursor: pointer; text-align: center; }
-    .opciones input[type="radio"]:checked + span { background: #ddd; border-color: #999; }
-    label[for], label { display: block; margin: 15px 0 5px; font-weight: bold; }
-    input[type="text"], select { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; background: #fafafa; }
-    .resultado { margin-top: 20px; padding: 15px; background: #eaeaea; border-radius: 4px; border: 1px dashed #ccc; font-size: 0.95em; word-break: break-word; }
-    #grafico { display: block; margin: 20px auto; border-radius: 50%; background: #fff; max-width: 100%; height: auto; }
-    #graficoLegend { text-align: center; font-size: 0.9em; margin-top: 8px; }
+    :root {
+      --page: #f3f2ee;
+      --surface: #fcfcfb;
+      --surface-2: #f0efec;
+      --ink: #0b0b0b;
+      --ink-2: #52514e;
+      --muted: #6e6d68;
+      --line: #e1e0d9;
+      --border: rgba(11, 11, 11, 0.10);
+      --link: #1f63b5;
+      --focus: #2a78d6;
+      --warning: #fab219;
+      --serie-1: #2a78d6;
+      --serie-2: #eb6834;
+      --serie-3: #1baf7a;
+      --serie-4: #eda100;
+      --sombra: 0 1px 2px rgba(11, 11, 11, 0.12);
+      --seleccion: #fcfcfb;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page: #0d0d0d;
+        --surface: #1a1a19;
+        --surface-2: #232321;
+        --ink: #ffffff;
+        --ink-2: #c3c2b7;
+        --muted: #a3a29a;
+        --line: #2c2c2a;
+        --border: rgba(255, 255, 255, 0.10);
+        --link: #6da7ec;
+        --focus: #6da7ec;
+        --serie-1: #3987e5;
+        --serie-2: #d95926;
+        --serie-3: #199e70;
+        --serie-4: #c98500;
+        --sombra: 0 1px 2px rgba(0, 0, 0, 0.5);
+        --seleccion: #383835;
+        color-scheme: dark;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      -webkit-text-size-adjust: 100%;
+    }
+    a { color: var(--link); }
+    :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+    .oculto {
+      position: absolute !important;
+      width: 1px; height: 1px;
+      margin: -1px; padding: 0; border: 0;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+    }
+
+    .contenedor { max-width: 1040px; margin: 0 auto; padding: 24px 16px 48px; }
+    .cabecera { margin-bottom: 20px; }
+    h1 { font-size: 1.75rem; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.01em; }
+    .entradilla { margin: 0; color: var(--ink-2); max-width: 62ch; }
+    h2 { font-size: 1.15rem; margin: 0 0 12px; }
+    h3 { font-size: 1rem; margin: 24px 0 8px; }
+
+    .rejilla { display: grid; gap: 16px; }
+    @media (min-width: 860px) {
+      .rejilla { grid-template-columns: minmax(300px, 350px) minmax(0, 1fr); align-items: start; }
+      .formulario { position: sticky; top: 16px; }
+    }
+    .tarjeta {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      min-width: 0;
+    }
+
+    /* Formulario */
+    fieldset { border: 0; margin: 0 0 16px; padding: 0; min-width: 0; }
+    legend, .etiqueta { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; padding: 0; }
+    .segmentado .opciones {
+      display: flex; gap: 2px; padding: 3px;
+      background: var(--surface-2); border-radius: 9px;
+    }
+    .segmentado label { flex: 1 1 0; position: relative; min-width: 0; }
+    .segmentado-auto label { flex: 1 1 auto; }
+    .segmentado-auto span { white-space: nowrap; padding-left: 8px; padding-right: 8px; }
+    .segmentado input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+    .segmentado span {
+      display: block; padding: 7px 4px; border-radius: 7px;
+      text-align: center; font-size: 0.95rem; color: var(--ink-2);
+      cursor: pointer; user-select: none;
+    }
+    .segmentado input:checked + span {
+      background: var(--seleccion); color: var(--ink); font-weight: 600;
+      box-shadow: var(--sombra), 0 0 0 1px var(--border);
+    }
+    .segmentado input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 1px; }
+
+    .campo { margin-bottom: 16px; }
+    .importe { position: relative; }
+    .importe input {
+      width: 100%; font: inherit; font-size: 1.6rem; font-weight: 600;
+      padding: 8px 44px 8px 12px; color: var(--ink);
+      background: var(--surface); border: 1px solid var(--line); border-radius: 9px;
+    }
+    .importe input:focus-visible { outline-offset: 0; border-color: var(--focus); }
+    .importe .sufijo {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      font-size: 1.3rem; color: var(--muted); pointer-events: none;
+    }
+    .importe.porcentaje input { font-size: 1rem; font-weight: 400; padding: 8px 32px 8px 10px; }
+    .importe.porcentaje .sufijo { font-size: 1rem; right: 12px; }
+    .ayuda { font-size: 0.85rem; color: var(--muted); margin: 6px 0 0; }
+    .error { color: var(--ink); font-size: 0.85rem; margin: 6px 0 0; }
+    .error::before { content: "⚠ "; }
+
+    select, .campo-texto {
+      width: 100%; font: inherit; padding: 8px 10px; color: var(--ink);
+      background: var(--surface); border: 1px solid var(--line); border-radius: 9px;
+    }
+    .casilla { display: flex; gap: 8px; align-items: flex-start; font-size: 0.95rem; margin-top: 12px; }
+    .casilla input { margin-top: 4px; width: 16px; height: 16px; flex: none; }
+    details.mas { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px; }
+    details.mas summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; }
+    details.mas[open] summary { margin-bottom: 12px; }
+    .boton {
+      font: inherit; font-size: 0.9rem; cursor: pointer;
+      padding: 7px 12px; border-radius: 8px;
+      color: var(--ink); background: var(--surface-2); border: 1px solid var(--border);
+    }
+
+    /* Resultados */
+    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .kpi { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+    .kpi-principal { grid-column: 1 / -1; background: transparent; padding: 0 0 4px; }
+    .kpi-etiqueta { margin: 0; font-size: 0.9rem; color: var(--ink-2); }
+    .kpi-valor { margin: 2px 0 0; font-size: 1.35rem; font-weight: 600; line-height: 1.2; }
+    .kpi-principal .kpi-valor { font-size: clamp(2.25rem, 7vw, 3rem); letter-spacing: -0.02em; }
+    .kpi-detalle { margin: 4px 0 0; font-size: 0.85rem; color: var(--muted); }
+
+    .tabla-desliza { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+    th, td { padding: 7px 0; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th + th, td + td { padding-left: 12px; }
+    thead th { font-size: 0.85rem; font-weight: 600; color: var(--ink-2); }
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .total td, .total th { font-weight: 700; border-bottom-color: var(--ink-2); }
+    .detalle th, .detalle td { font-size: 0.875rem; color: var(--ink-2); padding-top: 4px; padding-bottom: 4px; }
+    .detalle th { padding-left: 14px; font-weight: 400; }
+    .sin-detalle .detalle { display: none; }
+    .cabecera-tabla { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+
+    /* Gráfico: barra apilada del coste total */
+    .grafico { margin: 0; position: relative; }
+    .grafico figcaption { font-weight: 600; margin: 24px 0 4px; }
+    .grafico .subtitulo { font-size: 0.85rem; color: var(--muted); margin: 0 0 12px; }
+    .barra { display: flex; gap: 2px; height: 24px; }
+    .segmento {
+      position: relative; min-width: 2px; height: 100%;
+      display: flex; align-items: center; justify-content: center; overflow: visible;
+    }
+    .segmento:last-child { border-radius: 0 4px 4px 0; }
+    .segmento:hover, .segmento:focus-visible { filter: brightness(1.08); }
+    .segmento .dentro { font-size: 0.75rem; font-weight: 600; white-space: nowrap; pointer-events: none; }
+    .llave { position: relative; height: 26px; margin-top: 6px; }
+    .llave .tramo {
+      position: absolute; left: 0; top: 0; height: 7px;
+      border: 1px solid var(--muted); border-top: 0;
+    }
+    .llave .texto { position: absolute; left: 0; top: 9px; font-size: 0.8rem; color: var(--ink-2); white-space: nowrap; }
+    .leyenda td { padding-top: 6px; padding-bottom: 6px; }
+    .muestra { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: baseline; }
+    .tooltip {
+      position: absolute; z-index: 2; pointer-events: none;
+      background: var(--surface); color: var(--ink); border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); border-radius: 8px;
+      padding: 6px 10px; font-size: 0.85rem; white-space: nowrap;
+      transform: translate(-50%, calc(-100% - 8px));
+    }
+    .tooltip strong { display: block; font-size: 0.95rem; }
+    .tooltip .clave { display: inline-block; width: 12px; height: 2px; vertical-align: middle; margin-right: 6px; }
+
+    .avisos { display: grid; gap: 8px; margin-top: 20px; }
+    .aviso {
+      display: flex; gap: 10px; align-items: flex-start;
+      background: var(--surface-2); border-radius: 9px; padding: 10px 12px; font-size: 0.9rem;
+    }
+    .aviso svg { flex: none; margin-top: 2px; }
+    .aviso strong { font-weight: 600; }
+    .dato { margin: 16px 0 0; font-size: 0.9rem; color: var(--ink-2); }
+
+    .info { margin-top: 16px; }
+    .info p, .info li { color: var(--ink-2); max-width: 75ch; }
+    .info ul { padding-left: 20px; }
+    .info li { margin-bottom: 8px; }
+    .info h3 { color: var(--ink); }
+    .pie { margin-top: 24px; font-size: 0.85rem; color: var(--muted); }
+    .pie p { margin: 0 0 6px; max-width: 75ch; }
+
     @media (max-width: 480px) {
-      h1 { font-size: 1.5em; }
-      h2 { font-size: 1em; }
-      .opciones span { font-size: 0.9em; padding: 6px; }
+      h1 { font-size: 1.45rem; }
+      .tarjeta { padding: 16px; }
+      .kpis { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Calculadora precisa Bizkaia</h1>
-    <h2>Calcula neto, bruto y coste empresa</h2>
+  <div class="contenedor">
+    <header class="cabecera">
+      <h1>Calculadora de sueldo neto en Bizkaia 2026</h1>
+      <p class="entradilla">Pasa de bruto a neto, de neto a bruto o calcula el coste para la empresa con el IRPF foral de Bizkaia y las cotizaciones a la Seguridad Social de 2026.</p>
+    </header>
 
-    <div class="opciones">
-      <label><input type="radio" name="modo" value="coste" checked><span>Coste empresa</span></label>
-      <label><input type="radio" name="modo" value="neto"><span>Neto deseado</span></label>
-      <label><input type="radio" name="modo" value="bruto"><span>Bruto deseado</span></label>
-    </div>
+    <main class="rejilla">
+      <form class="tarjeta formulario" id="formulario" novalidate>
+        <h2 class="oculto">Datos</h2>
+        <fieldset class="segmentado segmentado-auto">
+          <legend>¿Qué sueldo conoces?</legend>
+          <div class="opciones">
+            <label><input type="radio" name="modo" value="bruto" checked><span>Bruto</span></label>
+            <label><input type="radio" name="modo" value="neto"><span>Neto</span></label>
+            <label><input type="radio" name="modo" value="coste"><span>Coste empresa</span></label>
+          </div>
+        </fieldset>
 
-    <div class="opciones">
-      <label><input type="radio" name="periodo" value="mensual" checked><span>Mensual</span></label>
-      <label><input type="radio" name="periodo" value="anual"><span>Anual</span></label>
-    </div>
+        <fieldset class="segmentado">
+          <legend>Periodo</legend>
+          <div class="opciones">
+            <label><input type="radio" name="periodo" value="anual" checked><span>Anual</span></label>
+            <label><input type="radio" name="periodo" value="mensual"><span>Mensual</span></label>
+          </div>
+        </fieldset>
 
-    <label for="pagas">Nº de pagas:</label>
-    <select id="pagas"><option value="12">12</option><option value="14">14</option></select>
+        <div class="campo">
+          <label class="etiqueta" for="importe" id="etiqueta-importe">Sueldo bruto anual</label>
+          <div class="importe">
+            <input id="importe" name="importe" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="30.000" aria-describedby="ayuda-importe">
+            <span class="sufijo" aria-hidden="true">€</span>
+          </div>
+          <p class="ayuda" id="ayuda-importe"></p>
+        </div>
 
-    <label id="inputLabel">Coste total para la empresa (€):</label>
-    <input id="entrada" type="text" placeholder="0,00">
+        <fieldset class="segmentado">
+          <legend>Número de pagas</legend>
+          <div class="opciones">
+            <label><input type="radio" name="pagas" value="12"><span>12</span></label>
+            <label><input type="radio" name="pagas" value="14" checked><span>14</span></label>
+          </div>
+        </fieldset>
 
-    <div class="resultado" id="resultado"></div>
-    <canvas id="grafico" width="200" height="200"></canvas>
-    <div id="graficoLegend"></div>
+        <div class="campo">
+          <label class="etiqueta" for="hijos">Hijos que viven contigo</label>
+          <select id="hijos" name="hijos">
+            <option value="0" selected>Ninguno</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6 o más</option>
+          </select>
+          <div id="opciones-hijos" hidden>
+            <label class="etiqueta" for="menores6" style="margin-top: 12px">De ellos, menores de 6 años</label>
+            <select id="menores6" name="menores6"></select>
+            <label class="casilla"><input type="checkbox" id="compartida" name="compartida" checked><span>El otro progenitor también aplica la deducción (se reparte a medias)</span></label>
+          </div>
+        </div>
+
+        <details class="mas">
+          <summary>Contrato y empresa</summary>
+          <div class="campo">
+            <label class="etiqueta" for="contrato">Tipo de contrato</label>
+            <select id="contrato" name="contrato">
+              <option value="indefinido" selected>Indefinido</option>
+              <option value="temporal">Temporal</option>
+            </select>
+          </div>
+          <label class="etiqueta" for="atep">Accidentes de trabajo (AT/EP)</label>
+          <div class="importe porcentaje">
+            <input class="campo-texto" id="atep" name="atep" type="text" inputmode="decimal" autocomplete="off" value="1,00" aria-describedby="ayuda-atep">
+            <span class="sufijo" aria-hidden="true">%</span>
+          </div>
+          <p class="ayuda" id="ayuda-atep">Lo paga la empresa y depende de la actividad. 1,00&nbsp;% es el de trabajo de oficina.</p>
+        </details>
+      </form>
+
+      <section class="tarjeta" aria-labelledby="titulo-resultado">
+        <h2 id="titulo-resultado" class="oculto">Resultado</h2>
+        <p class="oculto" id="resumen" aria-live="polite"></p>
+
+        <div class="kpis" id="kpis">
+          <div class="kpi kpi-principal"><p class="kpi-etiqueta"></p><p class="kpi-valor"></p><p class="kpi-detalle"></p></div>
+          <div class="kpi"><p class="kpi-etiqueta"></p><p class="kpi-valor"></p><p class="kpi-detalle"></p></div>
+          <div class="kpi"><p class="kpi-etiqueta"></p><p class="kpi-valor"></p><p class="kpi-detalle"></p></div>
+        </div>
+
+        <h3>Tu nómina</h3>
+        <div class="tabla-desliza">
+          <table id="tabla-nomina">
+            <thead><tr><th scope="col">Concepto</th><th scope="col" class="num columna-mes">Mes normal</th><th scope="col" class="num columna-extra">Paga extra</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="ayuda">El IRPF de cada nómina es la parte proporcional del IRPF del año. Tu empresa te retiene según la tabla de retenciones de Bizkaia, así que puede variar algo; la diferencia se ajusta en la declaración.</p>
+
+        <figure class="grafico" id="grafico">
+          <figcaption>A dónde va lo que paga la empresa</figcaption>
+          <p class="subtitulo">Reparto del coste anual total</p>
+          <div class="barra" id="barra" role="group" aria-label="Reparto del coste anual para la empresa"></div>
+          <div class="llave" aria-hidden="true"><div class="tramo" id="llave-tramo"></div><div class="texto" id="llave-texto"></div></div>
+          <table class="leyenda" id="leyenda">
+            <caption class="oculto">Reparto del coste anual para la empresa</caption>
+            <thead class="oculto"><tr><th scope="col">Parte</th><th scope="col">Importe anual</th><th scope="col">Porcentaje del coste</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <div class="tooltip" id="tooltip" hidden></div>
+        </figure>
+
+        <div class="cabecera-tabla">
+          <h3>Desglose anual</h3>
+          <button type="button" class="boton" id="ver-detalle" aria-expanded="false" aria-controls="tabla-anual">Ver el detalle</button>
+        </div>
+        <div class="tabla-desliza">
+          <table id="tabla-anual" class="sin-detalle">
+            <thead class="oculto"><tr><th scope="col">Concepto</th><th scope="col">Importe anual</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <p class="dato" id="dato-marginal"></p>
+        <div class="avisos" id="avisos"></div>
+
+        <p class="dato"><button type="button" class="boton" id="compartir" hidden>Copiar enlace a este cálculo</button></p>
+      </section>
+    </main>
+
+    <section class="tarjeta info">
+      <h2>Cómo se calcula</h2>
+      <ul>
+        <li><strong>Cotizaciones a la Seguridad Social de 2026.</strong> Con contrato indefinido, el trabajador paga un 6,50&nbsp;% de su base de cotización (contingencias comunes 4,70&nbsp;%, desempleo 1,55&nbsp;%, formación profesional 0,10&nbsp;% y MEI 0,15&nbsp;%). La empresa paga un 30,65&nbsp;% más el tipo de accidentes de trabajo. La base tiene un tope de 5.101,20 € al mes; por encima se paga la cotización de solidaridad (del 1,15&nbsp;% al 1,46&nbsp;% del exceso).</li>
+        <li><strong>IRPF foral de Bizkaia.</strong> Al bruto se le restan las cotizaciones y la bonificación por rendimientos del trabajo: 8.000 € si el rendimiento neto no pasa de 14.800 €, bajando hasta 3.000 € a partir de 23.000 €. A lo que queda se le aplica la tarifa foral, del 23&nbsp;% al 49&nbsp;%. A la cuota se le resta la minoración general de 1.615 € y, si tienes hijos, la deducción por descendientes (682 € por el primero, 844 € por el segundo, 1.421 € por el tercero… y 394 € más por cada menor de 6 años).</li>
+        <li><strong>Hasta 20.000 € brutos al año no estás obligado a declarar</strong> si solo tienes un pagador y no tienes otros ingresos. Si no declaras, tu IRPF es lo que te hayan retenido en nómina, que puede ser algo distinto del de la calculadora.</li>
+        <li><strong>Es el IRPF de todo el año, no la retención.</strong> La calculadora muestra el IRPF que te corresponde pagar. La retención de tu nómina sale de la tabla de retenciones de Bizkaia y puede ser algo distinta; la diferencia se ajusta en la declaración de la renta.</li>
+        <li><strong>No se incluyen</strong> otros ingresos, aportaciones a EPSV o planes de pensiones, la tributación conjunta, la discapacidad ni deducciones como la de alquiler de vivienda.</li>
+      </ul>
+
+      <h2 style="margin-top: 24px">Preguntas frecuentes</h2>
+      <h3>¿Por qué el IRPF de Bizkaia es distinto al del resto de España?</h3>
+      <p>Bizkaia tiene su propia normativa del IRPF (Norma Foral 13/2013). Hay una sola tarifa, del 23&nbsp;% al 49&nbsp;%, en lugar de la estatal más la autonómica, y no existe el mínimo personal: en su lugar se resta a la cuota una minoración fija y al sueldo la bonificación por rendimientos del trabajo.</p>
+      <h3>¿Qué cambia entre cobrar en 12 o en 14 pagas?</h3>
+      <p>El bruto y el neto anual son los mismos. Con 14 pagas el bruto anual se divide entre 14 y cobras dos pagas extra. En ellas no se descuenta Seguridad Social, porque ya se cotiza por ellas cada mes, así que su neto es algo mayor que el de un mes normal.</p>
+      <h3>¿Qué es el coste para la empresa?</h3>
+      <p>Es el sueldo bruto más las cotizaciones que paga la empresa a la Seguridad Social: alrededor de un 31,65&nbsp;% del bruto con contrato indefinido y trabajo de oficina, hasta la base máxima.</p>
+      <h3>¿Tengo que hacer la declaración de la renta?</h3>
+      <p>Si solo cobras de una empresa y no pasas de 20.000 € brutos al año, no estás obligado. Aun así, te puede convenir hacerla si te han retenido más IRPF del que te corresponde, porque te devolverán la diferencia.</p>
+    </section>
+
+    <footer class="pie">
+      <p>Estimación orientativa con los parámetros de 2026: cotizaciones de la Orden PJC/297/2026 e IRPF de la Norma Foral 13/2013 de Bizkaia, con los cambios de las Normas Forales 2/2025 y 7/2025. No sustituye a tu nómina ni al cálculo de la Hacienda Foral de Bizkaia. Revisada en septiembre de 2026.</p>
+      <p><a href="https://github.com/davsed/calculadora-bizkaia">Código fuente en GitHub</a></p>
+    </footer>
   </div>
 
-  <script>
-    // === CONSTANTES COTIZACIÓN 2025 (aprox RGSS, contrato indefinido) ===
-
-    const BASE_MAX_MENSUAL = 4909.50;
-    const BASE_MAX_ANUAL   = BASE_MAX_MENSUAL * 12;
-
-    // Empresa
-    const T_CC_EMP   = 0.2360;
-    const T_DES_EMP  = 0.0550;
-    const T_FOG_EMP  = 0.0020;
-    const T_FP_EMP   = 0.0060;
-    const T_MEI_EMP  = 0.0067;
-    const T_AT_EMP   = 0.0100;  // ajusta a tu CNAE si quieres
-
-    // Trabajador
-    const T_CC_TRA   = 0.0470;
-    const T_DES_TRA  = 0.0155;
-    const T_FP_TRA   = 0.0010;
-    const T_MEI_TRA  = 0.0013;
-
-    // Mínimo personal (simplificación razonable)
-    const MINIMO_PERSONAL = 5550;
-
-    // Tramos IRPF Bizkaia sobre base liquidable general (aprox)
-    var lim  = [0,17280,34560,51840,74030,102530,136670,199240,1e9];
-    var tipo = [0.23,0.28,0.35,0.40,0.45,0.46,0.47,0.49];
-
-    var entrada = document.getElementById('entrada');
-    var resultado = document.getElementById('resultado');
-    var grafico = document.getElementById('grafico');
-    var legend = document.getElementById('graficoLegend');
-    var modoRadios = document.getElementsByName('modo');
-    var periodoRadios = document.getElementsByName('periodo');
-    var pagas = document.getElementById('pagas');
-    var inputLabel = document.getElementById('inputLabel');
-
-    for (var i = 0; i < modoRadios.length; i++) {
-      modoRadios[i].addEventListener('change', onModoChange);
-      modoRadios[i].addEventListener('change', calcular);
-    }
-    for (var j = 0; j < periodoRadios.length; j++) {
-      periodoRadios[j].addEventListener('change', calcular);
-    }
-    pagas.addEventListener('change', calcular);
-    entrada.addEventListener('input', calcular);
-
-    function onModoChange() {
-      for (var k = 0; k < modoRadios.length; k++) {
-        if (modoRadios[k].checked) {
-          var val = modoRadios[k].value;
-          if (val === 'coste') inputLabel.textContent = 'Coste total para la empresa (€):';
-          else if (val === 'neto') inputLabel.textContent = 'Sueldo neto deseado (€):';
-          else inputLabel.textContent = 'Sueldo bruto deseado (€):';
-          break;
-        }
-      }
-    }
-
-    // Cotizaciones empresa/trabajador sobre UNA base dada
-    function cotizacionesEmpresa(baseCot) {
-      var cc  = baseCot * T_CC_EMP;
-      var des = baseCot * T_DES_EMP;
-      var fog = baseCot * T_FOG_EMP;
-      var fp  = baseCot * T_FP_EMP;
-      var mei = baseCot * T_MEI_EMP;
-      var at  = baseCot * T_AT_EMP;
-      var total = cc + des + fog + fp + mei + at;
-      return { total: total };
-    }
-
-    function cotizacionesTrabajador(baseCot) {
-      var cc  = baseCot * T_CC_TRA;
-      var des = baseCot * T_DES_TRA;
-      var fp  = baseCot * T_FP_TRA;
-      var mei = baseCot * T_MEI_TRA;
-      var total = cc + des + fp + mei;
-      return { total: total };
-    }
-
-    // Base liquidable aproximada: bruto - SS trabajador - mínimo personal (no negativa)
-    function baseLiquidable(brutoAnual, ssTrab) {
-      var base = brutoAnual - ssTrab - MINIMO_PERSONAL;
-      return base > 0 ? base : 0;
-    }
-
-    function cuotaIRPF(base) {
-      var irpf = 0, restante = base;
-      for (var m = 0; m < tipo.length; m++) {
-        if (restante <= 0) break;
-        var tramo = Math.min(restante, lim[m+1] - lim[m]);
-        irpf += tramo * tipo[m];
-        restante -= tramo;
-      }
-      return irpf;
-    }
-
-    function calcular() {
-      var raw = entrada.value.replace(/,/g, '.');
-      var valor = parseFloat(raw);
-      if (isNaN(valor)) { resultado.textContent = ''; clearChart(); return; }
-
-      var modo, periodo;
-      for (var x = 0; x < modoRadios.length; x++) {
-        if (modoRadios[x].checked) { modo = modoRadios[x].value; break; }
-      }
-      for (var y = 0; y < periodoRadios.length; y++) {
-        if (periodoRadios[y].checked) { periodo = periodoRadios[y].value; break; }
-      }
-
-      var numPagas = parseInt(pagas.value, 10);
-      var brutoAnual = 0, netoAnual = 0, costeAnual = 0;
-      var ssTrab = 0, ssEmp = 0, irpfFinal = 0;
-
-      if (modo === 'coste') {
-        // Coste conocido -> buscar bruto por binaria usando solo SS empresa
-        costeAnual = (periodo === 'mensual' ? valor * 12 : valor);
-        var low = 0, high = costeAnual, mid, total;
-        for (var it = 0; it < 50; it++) {
-          mid = (low + high) / 2;
-          var baseCotMid = Math.min(mid, BASE_MAX_ANUAL);
-          var empMid = cotizacionesEmpresa(baseCotMid).total;
-          total = mid + empMid;
-          if (total > costeAnual) high = mid; else low = mid;
-        }
-        brutoAnual = (low + high) / 2;
-      } else if (modo === 'bruto') {
-        brutoAnual = (periodo === 'mensual' ? valor * numPagas : valor);
-      } else if (modo === 'neto') {
-        netoAnual = (periodo === 'mensual' ? valor * numPagas : valor);
-        // búsqueda de bruto que da ese neto (IRPF + SS + tope)
-        var b = netoAnual / (1 - (T_CC_TRA+T_DES_TRA+T_FP_TRA+T_MEI_TRA) - 0.25);
-        var delta = 1, cnt = 0;
-        while (Math.abs(delta) > 0.01 && cnt++ < 60) {
-          var baseB = Math.min(b, BASE_MAX_ANUAL);
-          var ssTB = cotizacionesTrabajador(baseB).total;
-          var baseIRPF_B = baseLiquidable(b, ssTB);
-          var irpfB = cuotaIRPF(baseIRPF_B);
-          var netCalc = b - ssTB - irpfB;
-          delta = netoAnual - netCalc;
-          b += delta * 0.5;
-          if (b < 0) { b = 0; break; }
-        }
-        brutoAnual = b;
-      }
-
-      // Con el bruto definitivo calculamos todo coherente
-      var baseCot = Math.min(brutoAnual, BASE_MAX_ANUAL);
-      ssTrab = cotizacionesTrabajador(baseCot).total;
-      ssEmp  = cotizacionesEmpresa(baseCot).total;
-      var baseIRPF = baseLiquidable(brutoAnual, ssTrab);
-      irpfFinal = cuotaIRPF(baseIRPF);
-
-      netoAnual  = brutoAnual - ssTrab - irpfFinal;
-      costeAnual = brutoAnual + ssEmp;
-
-      resultado.innerHTML =
-        'Bruto mensual: ' + (brutoAnual / numPagas).toFixed(2).replace('.', ',') + ' €<br>' +
-        'Bruto anual: ' + brutoAnual.toFixed(2).replace('.', ',') + ' €<br><br>' +
-        'Coste mensual: ' + (costeAnual / 12).toFixed(2).replace('.', ',') + ' €<br>' +
-        'Coste anual: ' + costeAnual.toFixed(2).replace('.', ',') + ' €<br><br>' +
-        'Seguridad Social trabajador: ' + ssTrab.toFixed(2).replace('.', ',') + ' €<br>' +
-        'Seguridad Social empresa: ' + ssEmp.toFixed(2).replace('.', ',') + ' €<br>' +
-        'IRPF trabajador: ' + irpfFinal.toFixed(2).replace('.', ',') + ' €<br><br>' +
-        'Neto mensual: ' + (netoAnual / numPagas).toFixed(2).replace('.', ',') + ' €<br>' +
-        'Neto anual: ' + netoAnual.toFixed(2).replace('.', ',') + ' €';
-
-      drawChart(costeAnual, netoAnual, ssTrab, ssEmp, irpfFinal);
-    }
-
-    function clearChart() {
-      var ctx = grafico.getContext('2d');
-      ctx.clearRect(0, 0, grafico.width, grafico.height);
-      legend.innerHTML = '';
-    }
-
-    // Ahora el pastel reparte el coste TOTAL: neto + SS trab + IRPF + SS emp = 100 %
-    function drawChart(costeAnual, netoAnual, ssTrab, ssEmp, irpf) {
-      var total = costeAnual; // bruto + SS empresa
-      var pctNeto = netoAnual / total;
-      var pctSsTrab = ssTrab / total;
-      var pctIrpf   = irpf / total;
-      var pctSsEmp  = ssEmp / total;
-
-      var ctx = grafico.getContext('2d');
-      ctx.clearRect(0, 0, grafico.width, grafico.height);
-
-      var start = 0;
-      function slice(pct, color) {
-        var angle = pct * 2 * Math.PI;
-        ctx.beginPath();
-        ctx.moveTo(100, 100);
-        ctx.arc(100, 100, 80, start, start + angle);
-        ctx.closePath();
-        ctx.fillStyle = color;
-        ctx.fill();
-        start += angle;
-      }
-
-      slice(pctNeto,   '#81C784'); // verde claro
-      slice(pctSsTrab, '#388E3C'); // verde oscuro
-      slice(pctIrpf,   '#FF9800'); // naranja IRPF
-      slice(pctSsEmp,  '#F44336'); // rojo empresa
-
-      legend.innerHTML =
-        (pctNeto*100).toFixed(1) + '% Neto — ' +
-        (pctSsTrab*100).toFixed(1) + '% Cotizaciones Trabajador — ' +
-        (pctIrpf*100).toFixed(1) + '% IRPF — ' +
-        (pctSsEmp*100).toFixed(1) + '% Cotizaciones Empresa';
-    }
-
-    window.onload = calcular;
-  </script>
+  <noscript><p style="text-align:center">La calculadora necesita JavaScript activado.</p></noscript>
+  <script src="calculadora.js?v=2026.1"></script>
+  <script src="app.js?v=2026.1"></script>
 </body>
 </html>

@@ -1,0 +1,8 @@
+{
+  "name": "calculadora-bizkaia",
+  "private": true,
+  "description": "Calculadora de sueldo neto, bruto y coste empresa en Bizkaia",
+  "scripts": {
+    "test": "node --test"
+  }
+}
