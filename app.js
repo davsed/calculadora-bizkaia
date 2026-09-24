@@ -11,9 +11,9 @@
   const campoAtEp = $('atep');
   const selectHijos = $('hijos');
   const selectMenores6 = $('menores6');
-  const tooltip = $('tooltip');
 
   const ATEP_POR_DEFECTO = '1,00';
+  const UMBRAL_DECLARAR = P.irpf.umbralObligacionDeclarar;
 
   const euros = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', useGrouping: 'always' });
   const eurosSinCentimos = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0, useGrouping: 'always' });
@@ -29,14 +29,14 @@
     return conSigno && redondeado > 0 ? '+' + texto : texto;
   }
 
+  // Sin céntimos: para las cifras grandes y los importes aproximados ("unos 59 €").
+  function euroRedondo(x) {
+    return eurosSinCentimos.format(Math.round(x) || 0);
+  }
+
   // Para cifras fijas dentro de un texto: "20.000 €" en vez de "20.000,00 €".
   function importeRedondo(x) {
     return Number.isInteger(x) ? eurosSinCentimos.format(x) : euros.format(x);
-  }
-
-  // Para importes aproximados ("unos 59 €").
-  function aproximado(x) {
-    return eurosSinCentimos.format(Math.round(x));
   }
 
   function el(etiqueta, atributos, hijos) {
@@ -48,6 +48,11 @@
     });
     (hijos || []).forEach(function (hijo) { if (hijo) nodo.appendChild(hijo); });
     return nodo;
+  }
+
+  // "a 1 %, b 2 % y c 3 %"
+  function enumerar(partes) {
+    return partes.length > 1 ? partes.slice(0, -1).join(', ') + ' y ' + partes[partes.length - 1] : partes.join('');
   }
 
   // === Lectura del formulario ===
@@ -81,10 +86,12 @@
 
   function ayudaImporte(e) {
     if (e.periodo === 'mensual') {
-      if (e.modo === 'bruto' && e.pagas === 14) return 'Lo que cobras en bruto en cada una de las 14 pagas.';
-      if (e.modo === 'neto' && e.pagas === 14) return 'Lo que cobras en un mes normal, sin contar las pagas extra.';
+      if (e.modo === 'bruto' && e.pagas === 14) return 'El bruto de cada una de las 14 pagas.';
+      if (e.modo === 'neto' && e.pagas === 14) return 'El neto de la nómina de un mes normal, sin contar las pagas extra.';
+      if (e.modo === 'neto') return 'El neto de la nómina de cada mes.';
       if (e.modo === 'coste') return 'La media al mes: el coste anual entre 12.';
     }
+    if (e.modo === 'neto') return 'Lo que llega en el año, contando la declaración de la renta.';
     return 'Puedes escribir 30000, 30.000 o 30.000,50.';
   }
 
@@ -99,34 +106,138 @@
     $('opciones-hijos').hidden = hijos === 0;
   }
 
-  // === Pintado del resultado ===
+  // === Resumen: coste → bruto → neto y qué parte llega al trabajador ===
 
-  function pintarTarjetas(r, e) {
+  function pintarResumen(r) {
     const pagas = r.opciones.pagas;
-    const bruto = {
-      etiqueta: 'Bruto anual',
-      valor: dinero(r.brutoAnual),
-      detalle: dinero(r.brutoAnual / pagas) + ' en cada una de las ' + pagas + ' pagas'
-    };
-    const neto = {
-      etiqueta: 'Neto al mes',
-      valor: dinero(r.nomina.neto),
-      detalle: (r.pagaExtra ? 'Más 2 pagas extra de ' + dinero(r.pagaExtra.neto) + '. ' : '') +
-        'Neto del año, con la declaración: ' + dinero(r.netoAnual) + '.'
-    };
-    const coste = {
-      etiqueta: 'Coste anual para la empresa',
-      valor: dinero(r.costeAnual),
-      detalle: dinero(r.costeAnual / 12) + ' al mes de media'
-    };
-    const orden = e.modo === 'bruto' ? [neto, bruto, coste] : [bruto, neto, coste];
-    const tarjetas = $('kpis').children;
-    orden.forEach(function (datos, i) {
-      tarjetas[i].querySelector('.kpi-etiqueta').textContent = datos.etiqueta;
-      tarjetas[i].querySelector('.kpi-valor').textContent = datos.valor;
-      tarjetas[i].querySelector('.kpi-detalle').textContent = datos.detalle;
+    const hayDatos = r.costeAnual > 0;
+    const parte = hayDatos ? r.netoAnual / r.costeAnual : 0;
+
+    $('cifra-coste').textContent = euroRedondo(r.costeAnual);
+    $('detalle-coste').textContent = 'al año · ' + euroRedondo(r.costeAnual / 12) + ' al mes de media';
+    $('cifra-bruto').textContent = euroRedondo(r.brutoAnual);
+    $('detalle-bruto').textContent = 'al año · ' + euroRedondo(r.brutoAnual / pagas) + ' × ' + pagas + ' pagas';
+    $('cifra-neto').textContent = euroRedondo(r.netoAnual);
+    $('detalle-neto').textContent = 'al año · ' + euroRedondo(r.nomina.neto) + ' al mes' +
+      (r.pagaExtra ? ' y 2 pagas extra de ' + euroRedondo(r.pagaExtra.neto) : '');
+
+    $('porcentaje-neto').textContent = hayDatos ? porcentaje.format(parte) : '—';
+    $('medidor-neto').style.width = (parte * 100) + '%';
+    $('medidor').setAttribute('aria-label', hayDatos
+      ? porcentaje.format(parte) + ' para el trabajador y ' + porcentaje.format(1 - parte) + ' en impuestos y cotizaciones'
+      : 'Sin datos');
+    $('leyenda-neto').textContent = 'Para el trabajador: ' + euroRedondo(r.netoAnual) + (hayDatos ? ' (' + porcentaje.format(parte) + ')' : '');
+    $('leyenda-resto').textContent = 'Impuestos y cotizaciones: ' + euroRedondo(r.costeAnual - r.netoAnual) +
+      (hayDatos ? ' (' + porcentaje.format(1 - parte) + ')' : '');
+  }
+
+  // === Cascada: cada paso del coste al neto, con su explicación ===
+
+  function textoCotizacion(total, bruto, tipos) {
+    let texto = 'El ' + tipo.format(bruto > 0 ? total / bruto : 0) + ' del bruto: ' + enumerar(tipos) + '.';
+    if (bruto / 12 > P.seguridadSocial.baseMaximaMensual) {
+      texto += ' Se cotiza como máximo por ' + importeRedondo(P.seguridadSocial.baseMaximaMensual) +
+        ' al mes; por encima solo se paga la cotización de solidaridad.';
+    }
+    return texto;
+  }
+
+  function resumenIrpf(r) {
+    const ir = r.irpf;
+    const minimo = esRetencionMinima(r) ? ' (el mínimo en contratos de menos de un año)' : '';
+    const retencion = 'En nómina se retiene un ' + porcentajeEntero.format(ir.tipoRetencion) + minimo;
+    if (!ir.obligadoADeclarar) {
+      if (ir.retencion === 0) return 'Hasta ' + importeRedondo(UMBRAL_DECLARAR) + ' brutos no hay retención ni obligación de declarar.';
+      if (ir.resultadoDeclaracion < -0.5) return retencion + '; declarando se recuperan unos ' + euroRedondo(-ir.resultadoDeclaracion) + '.';
+      return retencion + ' y no hay obligación de declarar.';
+    }
+    if (ir.resultadoDeclaracion > 0.5) return retencion + ' y en la renta salen a pagar unos ' + euroRedondo(ir.resultadoDeclaracion) + '.';
+    if (ir.resultadoDeclaracion < -0.5) return retencion + ' y en la renta salen a devolver unos ' + euroRedondo(-ir.resultadoDeclaracion) + '.';
+    return retencion + ', que cubre casi justo el IRPF del año.';
+  }
+
+  function esRetencionMinima(r) {
+    const segunTabla = C.tipoRetencion(r.brutoAnual, Object.assign({}, r.opciones, { contrato: 'indefinido' }));
+    return r.irpf.tipoRetencion > segunTabla;
+  }
+
+  function pintarCascada(r) {
+    const lista = $('cascada');
+    lista.textContent = '';
+    const coste = r.costeAnual;
+    if (!(coste > 0)) return;
+
+    const ss = r.cotizaciones;
+    const o = r.opciones;
+    const bruto = r.brutoAnual;
+    const trasCotizar = bruto - ss.totalTrabajador;
+    const e = P.seguridadSocial.empresa;
+    const t = P.seguridadSocial.trabajador;
+
+    const pasos = [
+      {
+        nombre: 'Coste total para la empresa', valor: coste, desde: 0, color: '--gris-dato', clase: 'total',
+        texto: 'Lo que paga la empresa por el puesto en un año: ' + dinero(coste / 12) + ' al mes de media.'
+      },
+      {
+        signo: '−', leido: 'menos', nombre: 'Seguridad Social de la empresa', valor: ss.totalEmpresa, desde: bruto, color: '--serie-4',
+        texto: textoCotizacion(ss.totalEmpresa, bruto, [
+          'contingencias comunes ' + tipo.format(e.contingenciasComunes),
+          'desempleo ' + tipo.format(e.desempleo[o.contrato]),
+          'FOGASA ' + tipo.format(e.fogasa),
+          'formación ' + tipo.format(e.formacion),
+          'MEI ' + tipo.format(e.mei),
+          'accidentes de trabajo ' + tipo.format(o.atEp)
+        ])
+      },
+      {
+        signo: '=', leido: 'igual a', nombre: 'Sueldo bruto', valor: bruto, desde: 0, color: '--gris-dato', clase: 'total',
+        texto: 'El sueldo del contrato: ' + dinero(bruto / o.pagas) + ' en cada una de las ' + o.pagas + ' pagas.'
+      },
+      {
+        signo: '−', leido: 'menos', nombre: 'Seguridad Social del trabajador', valor: ss.totalTrabajador, desde: trasCotizar, color: '--serie-3',
+        texto: textoCotizacion(ss.totalTrabajador, bruto, [
+          'contingencias comunes ' + tipo.format(t.contingenciasComunes),
+          'desempleo ' + tipo.format(t.desempleo[o.contrato]),
+          'formación ' + tipo.format(t.formacion),
+          'MEI ' + tipo.format(t.mei)
+        ])
+      },
+      {
+        signo: '−', leido: 'menos', nombre: 'IRPF', valor: r.irpf.aPagar, desde: r.netoAnual, color: '--serie-2',
+        texto: 'El ' + porcentaje.format(r.tipoEfectivoIrpf) + ' del bruto' + (o.hijos > 0 ? ', ya con la deducción por hijos' : '') + '. ' + resumenIrpf(r)
+      },
+      {
+        signo: '=', leido: 'igual a', nombre: 'Neto para el trabajador', valor: r.netoAnual, desde: 0, color: '--serie-1', clase: 'total neto',
+        texto: 'Lo que llega a su cuenta en el año, contando la declaración de la renta. Cada mes, ' + dinero(r.nomina.neto) +
+          (r.pagaExtra ? ', y ' + dinero(r.pagaExtra.neto) + ' en cada paga extra.' : '.')
+      }
+    ];
+
+    pasos.forEach(function (paso) {
+      const barra = el('div', { clase: 'paso-barra', 'aria-hidden': 'true' });
+      if (paso.valor > 0) {
+        barra.appendChild(el('span', {
+          style: 'left:' + (100 * paso.desde / coste) + '%;width:' + (100 * paso.valor / coste) + '%;background:var(' + paso.color + ')'
+        }));
+      }
+      lista.appendChild(el('li', { clase: 'paso ' + (paso.clase || '') }, [
+        el('div', { clase: 'paso-fila' }, [
+          el('span', { clase: 'paso-nombre' }, [
+            el('span', { clase: 'paso-signo', 'aria-hidden': 'true', texto: paso.signo || '' }),
+            paso.leido ? el('span', { clase: 'oculto', texto: paso.leido + ' ' }) : null,
+            document.createTextNode(paso.nombre)
+          ]),
+          el('span', { clase: 'paso-importe', texto: dinero(paso.valor) }),
+          el('span', { clase: 'paso-porcentaje', texto: porcentaje.format(paso.valor / coste) })
+        ]),
+        barra,
+        el('p', { clase: 'paso-explicacion', texto: paso.texto })
+      ]));
     });
   }
+
+  // === Nómina de cada mes ===
 
   function pintarNomina(r) {
     const n = r.nomina;
@@ -151,119 +262,26 @@
     $('nota-nomina').textContent = textoDeclaracion(r);
   }
 
-  // Qué pasa con el IRPF del año: lo retenido frente a lo que sale en la declaración.
+  // Lo retenido en nómina frente a lo que sale en la declaración.
   function textoDeclaracion(r) {
     const ir = r.irpf;
-    const tabla = C.tipoRetencion(r.brutoAnual, Object.assign({}, r.opciones, { contrato: 'indefinido' }));
-    const minimo = ir.tipoRetencion > tabla ? ' (el mínimo en contratos de menos de un año)' : '';
-    const retencion = ir.tipoRetencion > 0
-      ? 'Te retienen un ' + porcentajeEntero.format(ir.tipoRetencion) + minimo + ', según la tabla de retenciones de Bizkaia de ' + P.anio + '. '
-      : 'Con este sueldo la tabla de retenciones de Bizkaia no te retiene IRPF. ';
     if (!(r.brutoAnual > 0)) return '';
+    const minimo = esRetencionMinima(r) ? ' (el mínimo en contratos de menos de un año)' : '';
+    const retencion = ir.tipoRetencion > 0
+      ? 'La retención de IRPF es del ' + porcentajeEntero.format(ir.tipoRetencion) + minimo + ', según la tabla de retenciones de Bizkaia de ' + P.anio + '. '
+      : 'Con este sueldo la tabla de retenciones de Bizkaia no aplica retención de IRPF. ';
     if (!ir.obligadoADeclarar) {
-      const sinObligacion = 'Con un solo pagador y hasta ' + importeRedondo(P.irpf.umbralObligacionDeclarar) + ' brutos no estás obligado a hacer la declaración';
-      if (ir.resultadoDeclaracion < -0.5) return retencion + sinObligacion + ', pero te conviene: te devolverían unos ' + aproximado(-ir.resultadoDeclaracion) + '.';
-      if (ir.retencion > 0) return retencion + sinObligacion + ', así que tu IRPF se queda en lo retenido.';
-      return retencion + sinObligacion + ', así que no pagas IRPF (si no tienes otros ingresos).';
+      const sinObligacion = 'Con un solo pagador y hasta ' + importeRedondo(UMBRAL_DECLARAR) + ' brutos no hay obligación de hacer la declaración';
+      if (ir.resultadoDeclaracion < -0.5) return retencion + sinObligacion + ', pero compensa hacerla: devolverían unos ' + euroRedondo(-ir.resultadoDeclaracion) + '.';
+      if (ir.retencion > 0) return retencion + sinObligacion + ', así que el IRPF se queda en lo retenido.';
+      return retencion + sinObligacion + ', así que no se paga IRPF (si no hay otros ingresos).';
     }
-    if (ir.resultadoDeclaracion > 0.5) return retencion + 'En la declaración de la renta te saldrá a pagar la diferencia: unos ' + aproximado(ir.resultadoDeclaracion) + '.';
-    if (ir.resultadoDeclaracion < -0.5) return retencion + 'En la declaración de la renta te devolverán unos ' + aproximado(-ir.resultadoDeclaracion) + '.';
+    if (ir.resultadoDeclaracion > 0.5) return retencion + 'En la declaración de la renta saldrá a pagar la diferencia: unos ' + euroRedondo(ir.resultadoDeclaracion) + '.';
+    if (ir.resultadoDeclaracion < -0.5) return retencion + 'En la declaración de la renta saldrán a devolver unos ' + euroRedondo(-ir.resultadoDeclaracion) + '.';
     return retencion + 'Cubre casi justo el IRPF del año, así que la declaración saldrá a cero o casi.';
   }
 
-  const PARTES = [
-    { nombre: 'Neto para el trabajador', color: '--serie-1', valor: function (r) { return r.netoAnual; } },
-    { nombre: 'IRPF', color: '--serie-2', valor: function (r) { return r.irpf.aPagar; } },
-    { nombre: 'Seguridad Social del trabajador', color: '--serie-3', valor: function (r) { return r.cotizaciones.totalTrabajador; } },
-    { nombre: 'Seguridad Social de la empresa', color: '--serie-4', valor: function (r) { return r.cotizaciones.totalEmpresa; } }
-  ];
-
-  // Texto blanco o negro según lo que contraste más con el color del segmento.
-  function tintaPara(colorCss) {
-    const rgb = (colorCss.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(function (v) {
-      const c = Number(v) / 255;
-      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-    });
-    const luminancia = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
-    return (luminancia + 0.05) / 0.05 >= 1.05 / (luminancia + 0.05) ? '#0b0b0b' : '#ffffff';
-  }
-
-  function pintarGrafico(r) {
-    const figura = $('grafico');
-    const barra = $('barra');
-    const total = r.costeAnual;
-    figura.hidden = !(total > 0);
-    barra.textContent = '';
-    ocultarTooltip();
-    if (!(total > 0)) return;
-
-    const leyenda = $('leyenda').tBodies[0];
-    leyenda.textContent = '';
-    let segmentoBruto = null;
-
-    PARTES.forEach(function (parte, i) {
-      const valor = parte.valor(r);
-      const cuota = valor / total;
-      const color = 'var(' + parte.color + ')';
-      leyenda.appendChild(el('tr', {}, [
-        el('td', {}, [el('span', { clase: 'muestra', style: 'background:' + color, 'aria-hidden': 'true' }), document.createTextNode(parte.nombre)]),
-        el('td', { clase: 'num', texto: dinero(valor) }),
-        el('td', { clase: 'num', texto: porcentaje.format(cuota) })
-      ]));
-      if (!(valor > 0)) return;
-
-      const segmento = el('div', {
-        clase: 'segmento',
-        tabindex: '0',
-        role: 'img',
-        'aria-label': parte.nombre + ': ' + dinero(valor) + ' (' + porcentaje.format(cuota) + ' del coste)',
-        style: 'flex: ' + valor + ' 1 0; background: ' + color
-      }, [el('span', { clase: 'dentro', 'aria-hidden': 'true', texto: porcentajeEntero.format(cuota) })]);
-      segmento.dataset.nombre = parte.nombre;
-      segmento.dataset.valor = dinero(valor);
-      segmento.dataset.porcentaje = porcentaje.format(cuota);
-      segmento.dataset.color = color;
-      barra.appendChild(segmento);
-      if (i <= 2) segmentoBruto = segmento;
-    });
-
-    // La llave marca qué parte del coste es el sueldo bruto (neto + IRPF + cotización del trabajador).
-    $('llave-texto').textContent = 'Sueldo bruto: ' + dinero(r.brutoAnual) + ' (' + porcentaje.format(r.brutoAnual / total) + ')';
-    barra.dataset.segmentoBruto = segmentoBruto ? String(Array.prototype.indexOf.call(barra.children, segmentoBruto)) : '';
-    ajustarGrafico();
-  }
-
-  // Lo que depende del tamaño real en pantalla: etiquetas dentro de los segmentos y la llave.
-  function ajustarGrafico() {
-    const barra = $('barra');
-    Array.prototype.forEach.call(barra.children, function (segmento) {
-      const texto = segmento.firstChild;
-      texto.style.color = tintaPara(getComputedStyle(segmento).backgroundColor);
-      texto.style.visibility = 'visible';
-      if (texto.offsetWidth + 12 > segmento.clientWidth) texto.style.visibility = 'hidden';
-    });
-    const indice = barra.dataset.segmentoBruto;
-    const segmentoBruto = indice === '' ? null : barra.children[Number(indice)];
-    $('llave-tramo').style.width = segmentoBruto ? segmentoBruto.offsetLeft - barra.offsetLeft + segmentoBruto.offsetWidth + 'px' : '0';
-  }
-
-  function mostrarTooltip(segmento) {
-    const figura = $('grafico');
-    const caja = segmento.getBoundingClientRect();
-    const cajaFigura = figura.getBoundingClientRect();
-    tooltip.textContent = '';
-    tooltip.appendChild(el('strong', { texto: segmento.dataset.valor }));
-    tooltip.appendChild(el('span', { clase: 'clave', style: 'background:' + segmento.dataset.color, 'aria-hidden': 'true' }));
-    tooltip.appendChild(document.createTextNode(segmento.dataset.nombre + ' · ' + segmento.dataset.porcentaje));
-    tooltip.hidden = false;
-    // Centrado sobre el segmento, sin salirse de la tarjeta.
-    const mitad = tooltip.offsetWidth / 2;
-    const centro = caja.left - cajaFigura.left + caja.width / 2;
-    tooltip.style.left = Math.min(Math.max(centro, mitad), cajaFigura.width - mitad) + 'px';
-    tooltip.style.top = caja.top - cajaFigura.top + 'px';
-  }
-
-  function ocultarTooltip() { tooltip.hidden = true; }
+  // === Cálculo detallado ===
 
   function filasAnuales(r) {
     const ss = r.cotizaciones;
@@ -296,7 +314,7 @@
     if (ir.obligadoADeclarar || ir.resultadoDeclaracion < -0.005) {
       detalle(ir.resultadoDeclaracion >= 0 ? 'A pagar en la declaración' : 'A devolver en la declaración', Math.abs(ir.resultadoDeclaracion));
     } else {
-      detalle('Sin obligación de declarar: pagas lo retenido', ir.aPagar);
+      detalle('Sin obligación de declarar: se paga lo retenido', ir.aPagar);
     }
 
     fila('Sueldo neto', r.netoAnual, 'total');
@@ -325,17 +343,19 @@
     });
   }
 
+  // === Avisos y dato marginal ===
+
   const ICONO_INFO = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 7v4.5M8 4.6v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
   const ICONO_AVISO = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 15 14H1z" fill="#fab219"/><path d="M8 6v4M8 12v.1" stroke="#0b0b0b" stroke-width="1.6" stroke-linecap="round"/></svg>';
 
   function textoAviso(aviso) {
     switch (aviso.codigo) {
       case 'bajo-smi':
-        return ['Ojo: ', 'es menos que el salario mínimo de ' + P.anio + ' a jornada completa (' + importeRedondo(P.smiAnual) + ' brutos al año). Si trabajas a jornada parcial, es normal.', ICONO_AVISO];
+        return ['Ojo: ', 'es menos que el salario mínimo de ' + P.anio + ' a jornada completa (' + importeRedondo(P.smiAnual) + ' brutos al año). A jornada parcial es normal.', ICONO_AVISO];
       case 'escalon-20000':
-        return ['Ojo: ', 'al pasar de ' + importeRedondo(P.irpf.umbralObligacionDeclarar) + ' brutos empiezan las retenciones y tienes que hacer la declaración. Con este sueldo cobras ' + dinero(aviso.perdida) + ' netos al año menos que con ' + importeRedondo(P.irpf.umbralObligacionDeclarar) + ' justos.', ICONO_AVISO];
+        return ['Ojo: ', 'al pasar de ' + importeRedondo(UMBRAL_DECLARAR) + ' brutos empiezan las retenciones y hay que hacer la declaración. Con este sueldo llegan ' + dinero(aviso.perdida) + ' netos al año menos que con ' + importeRedondo(UMBRAL_DECLARAR) + ' justos.', ICONO_AVISO];
       case 'solidaridad':
-        return ['Base máxima: ', 'tu sueldo supera el tope de cotización (' + importeRedondo(P.seguridadSocial.baseMaximaMensual) + ' al mes). Por el exceso solo se paga la cotización de solidaridad.', ICONO_INFO];
+        return ['Base máxima: ', 'el sueldo supera el tope de cotización (' + importeRedondo(P.seguridadSocial.baseMaximaMensual) + ' al mes). Por el exceso solo se paga la cotización de solidaridad.', ICONO_INFO];
       default:
         return null;
     }
@@ -355,8 +375,13 @@
 
     const marginal = $('dato-marginal');
     if (!(r.brutoAnual > 0)) marginal.textContent = '';
-    else if (r.netoPorCada100 >= 0) marginal.textContent = 'Si tu bruto anual sube 100 €, tu neto del año sube ' + dinero(r.netoPorCada100) + '.';
-    else marginal.textContent = 'Si tu bruto anual subiera 100 €, pasarías de ' + importeRedondo(P.irpf.umbralObligacionDeclarar) + ' y tu neto del año bajaría ' + dinero(-r.netoPorCada100) + '.';
+    else if (r.netoPorCada100 >= 0) {
+      marginal.textContent = 'Si el bruto anual sube 100 €, a la empresa le cuesta ' + dinero(r.costePorCada100) +
+        ' más y al trabajador le llegan ' + dinero(r.netoPorCada100) + ' más.';
+    } else {
+      marginal.textContent = 'Si el bruto anual subiera 100 €, se pasaría de ' + importeRedondo(UMBRAL_DECLARAR) + ': a la empresa le costaría ' +
+        dinero(r.costePorCada100) + ' más y al trabajador le llegarían ' + dinero(-r.netoPorCada100) + ' menos.';
+    }
   }
 
   // === Enlace compartible ===
@@ -412,19 +437,21 @@
     campoImporte.setAttribute('aria-invalid', String(!valido));
 
     const r = C.calcular(Object.assign({}, e, { importe: valido ? e.importe : 0 }));
-    pintarTarjetas(r, e);
-    pintarNomina(r);
-    pintarGrafico(r);
-    pintarDesglose(r);
+    pintarResumen(r);
     pintarAvisos(r);
+    pintarCascada(r);
+    pintarNomina(r);
+    pintarDesglose(r);
 
     clearTimeout(temporizadorUrl);
     temporizadorUrl = setTimeout(function () { escribirUrl(e); }, 300);
 
     clearTimeout(temporizadorResumen);
     temporizadorResumen = setTimeout(function () {
-      $('resumen').textContent = 'Bruto anual ' + dinero(r.brutoAnual) + '. Neto al mes ' + dinero(r.nomina.neto) +
-        '. Coste anual para la empresa ' + dinero(r.costeAnual) + '.';
+      $('resumen').textContent = r.costeAnual > 0
+        ? 'Cuesta a la empresa ' + euroRedondo(r.costeAnual) + ' al año. Sueldo bruto ' + euroRedondo(r.brutoAnual) +
+          '. Llegan al trabajador ' + euroRedondo(r.netoAnual) + ', el ' + porcentaje.format(r.netoAnual / r.costeAnual) + ' del coste.'
+        : '';
     }, 700);
   }
 
@@ -435,18 +462,6 @@
   formulario.addEventListener('submit', function (evento) { evento.preventDefault(); });
   formulario.addEventListener('input', alCambiar);
   formulario.addEventListener('change', alCambiar);
-
-  const barra = $('barra');
-  ['pointerenter', 'pointermove'].forEach(function (tipoEvento) {
-    barra.addEventListener(tipoEvento, function (evento) {
-      const segmento = evento.target.closest('.segmento');
-      if (segmento) mostrarTooltip(segmento);
-    });
-  });
-  barra.addEventListener('pointerleave', function (evento) { if (evento.pointerType !== 'touch') ocultarTooltip(); });
-  barra.addEventListener('focusin', function (evento) { mostrarTooltip(evento.target); });
-  barra.addEventListener('focusout', ocultarTooltip);
-  if ('ResizeObserver' in window) new ResizeObserver(ajustarGrafico).observe(barra);
 
   const botonDetalle = $('ver-detalle');
   botonDetalle.addEventListener('click', function () {

@@ -309,8 +309,9 @@
       cotizaciones: ss,
       irpf: renta,
       tipoEfectivoIrpf: brutoAnual > 0 ? renta.aPagar / brutoAnual : 0,
-      // Cuánto neto anual añaden 100 € más de bruto anual.
+      // Cuánto neto y cuánto coste anual añaden 100 € más de bruto anual.
       netoPorCada100: netoAnual(brutoAnual + 100, o) - neto,
+      costePorCada100: 100 + cotizaciones(brutoAnual + 100, o).totalEmpresa - ss.totalEmpresa,
       nomina: nomina,
       pagaExtra: pagaExtra,
       avisos: avisos

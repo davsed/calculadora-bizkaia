@@ -81,6 +81,12 @@ test('IRPF foral: 30.000 € brutos sin hijos', () => {
   cerca(r.costeAnual, 39495);
 });
 
+test('lo que cuestan a la empresa 100 € más de bruto', () => {
+  cerca(C.calcularDesdeBruto(30000, {}).costePorCada100, 131.65);
+  // Por encima del tope de cotización la empresa solo paga la cotización de solidaridad.
+  cerca(C.calcularDesdeBruto(85000, {}).costePorCada100, 101.04);
+});
+
 test('deducción por hijos, compartida o no, y con tope en la cuota', () => {
   const compartida = C.calcularDesdeBruto(30000, { hijos: 2, menores6: 1 });
   cerca(compartida.irpf.deduccionDescendientes, (682 + 844 + 394) / 2);

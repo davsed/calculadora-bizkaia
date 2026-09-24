@@ -1,11 +1,12 @@
 # Calculadora de sueldo neto en Bizkaia
 
-Calculadora web para pasar de bruto a neto, de neto a bruto y calcular el coste para la empresa en Bizkaia, con el IRPF foral y las cotizaciones a la Seguridad Social de 2026.
+Calculadora web para ver de un vistazo cuánto cuesta un puesto de trabajo a la empresa, cuánto de eso llega a la cuenta del trabajador y a dónde va el resto, en Bizkaia, con el IRPF foral y las cotizaciones a la Seguridad Social de 2026. Se puede partir del bruto, del neto o del coste para la empresa.
 
 https://davsed.github.io/calculadora-bizkaia/
 
 ## Qué calcula
 
+- **El reparto del coste**: coste para la empresa → sueldo bruto → neto para el trabajador, con el porcentaje del coste que llega al trabajador y una cascada paso a paso (cotizaciones de la empresa, cotizaciones del trabajador e IRPF).
 - **Cotizaciones de 2026** del trabajador y de la empresa: contingencias comunes, desempleo (indefinido o temporal), FOGASA, formación profesional, MEI y accidentes de trabajo, con la base máxima y la cotización de solidaridad.
 - **IRPF foral de Bizkaia**: bonificación de los rendimientos del trabajo, tarifa del 23 % al 49 %, minoración de cuota y deducción por hijos (entera o a medias con el otro progenitor).
 - **La nómina** de un mes normal y de la paga extra, con 12 o 14 pagas, con la retención de la tabla oficial de Bizkaia (y el mínimo del 2 % en contratos de menos de un año).
@@ -35,7 +36,7 @@ Comprobados en septiembre de 2026 con la [Orden PJC/297/2026 en el BOE](https://
 
 - `index.html`: la página y sus estilos.
 - `calculadora.js`: la lógica de cálculo, sin DOM. Se usa en el navegador y en los tests.
-- `app.js`: la interfaz (formulario, resultados, gráfico y enlace para compartir).
+- `app.js`: la interfaz (formulario, resumen del coste al neto, cascada, nómina, cálculo detallado y enlace para compartir).
 - `tests/`: tests con `node:test`.
 
 ## Tests
