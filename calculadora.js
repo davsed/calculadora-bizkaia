@@ -1,5 +1,6 @@
 /*
- * Calculadora de sueldo neto, bruto y coste de empresa en Bizkaia (2026).
+ * Calculadora de sueldo neto, bruto y coste de empresa en Bizkaia (2026), para
+ * personas asalariadas y para socios de su propia sociedad dados de alta en el RETA.
  *
  * Lógica de cálculo pura, sin DOM: la usa index.html en el navegador y los
  * tests con Node (`node --test`). Todos los importes son anuales salvo que el
@@ -17,6 +18,8 @@
   // IRPF: Norma Foral 13/2013 de Bizkaia, con la bonificación del trabajo de la
   // NF 2/2025 y la deflactación del 2 % de la NF 7/2025 (Presupuestos 2026).
   // Retenciones: art. 88 del Reglamento del IRPF (DF 47/2014), según el DF 134/2025.
+  // RETA: arts. 18 y 37 de la Orden PJC/297/2026 y art. 308 de la Ley General de la
+  // Seguridad Social.
   const PARAMETROS = {
     anio: 2026,
     seguridadSocial: {
@@ -110,6 +113,39 @@
       ],
       // Mínimo de retención en contratos de duración inferior al año.
       retencionMinimaContratoCorto: 0.02
+    },
+    reta: {
+      tipos: {
+        contingenciasComunes: 0.2830,
+        contingenciasProfesionales: 0.0130,
+        ceseActividad: 0.0090,
+        formacion: 0.0010,
+        mei: 0.0090
+      },
+      // Tramos de rendimientos netos mensuales (tabla reducida y tabla general) con su
+      // base mínima y máxima. La tabla reducida llega hasta 1.166,69 € (es "< 1.166,70").
+      tramos: [
+        { hasta: 670, min: 653.59, max: 718.94, nombre: 'Tabla reducida, tramo 1' },
+        { hasta: 900, min: 718.95, max: 900, nombre: 'Tabla reducida, tramo 2' },
+        { hasta: 1166.69, min: 849.67, max: 1166.70, nombre: 'Tabla reducida, tramo 3' },
+        { hasta: 1300, min: 950.98, max: 1300, nombre: 'Tramo 1' },
+        { hasta: 1500, min: 960.78, max: 1500, nombre: 'Tramo 2' },
+        { hasta: 1700, min: 960.78, max: 1700, nombre: 'Tramo 3' },
+        { hasta: 1850, min: 1143.79, max: 1850, nombre: 'Tramo 4' },
+        { hasta: 2030, min: 1209.15, max: 2030, nombre: 'Tramo 5' },
+        { hasta: 2330, min: 1274.51, max: 2330, nombre: 'Tramo 6' },
+        { hasta: 2760, min: 1356.21, max: 2760, nombre: 'Tramo 7' },
+        { hasta: 3190, min: 1437.91, max: 3190, nombre: 'Tramo 8' },
+        { hasta: 3620, min: 1519.61, max: 3620, nombre: 'Tramo 9' },
+        { hasta: 4050, min: 1601.31, max: 4050, nombre: 'Tramo 10' },
+        { hasta: 6000, min: 1732.03, max: 5101.20, nombre: 'Tramo 11' },
+        { hasta: Infinity, min: 1928.10, max: 5101.20, nombre: 'Tramo 12' }
+      ],
+      // Socios con control de su sociedad (art. 305.2.b LGSS): no pueden cotizar por menos
+      // de la base mínima del grupo 7 del Régimen General y sus rendimientos se calculan con
+      // una deducción por gastos genéricos del 3 % (art. 308.1).
+      baseMinimaSocietario: 1424.40,
+      gastosGenericosSocietario: 0.03
     }
   };
 
@@ -119,7 +155,10 @@
     atEp: PARAMETROS.seguridadSocial.atEpPorDefecto,
     hijos: 0,
     menores6: 0,
-    deduccionCompartida: true
+    deduccionCompartida: true,
+    // Solo para socios en el RETA.
+    cuotaPagaSociedad: true,
+    baseReta: null
   };
 
   function normalizarOpciones(opciones) {
@@ -130,6 +169,8 @@
     o.hijos = Math.max(0, Math.floor(o.hijos) || 0);
     o.menores6 = Math.min(o.hijos, Math.max(0, Math.floor(o.menores6) || 0));
     o.deduccionCompartida = o.deduccionCompartida !== false;
+    o.cuotaPagaSociedad = o.cuotaPagaSociedad !== false;
+    o.baseReta = Number.isFinite(o.baseReta) && o.baseReta > 0 ? o.baseReta : null;
     return o;
   }
 
@@ -318,6 +359,141 @@
     };
   }
 
+  // === Socio de su propia sociedad, dado de alta en el RETA ===
+  // Todo se calcula a partir de lo que paga la sociedad por su trabajo en el año: la
+  // nómina más, si la paga ella, la cuota de autónomo.
+
+  function tramoReta(rendimientoMensual) {
+    const r = Math.round(rendimientoMensual * 100) / 100;
+    return PARAMETROS.reta.tramos.find(function (t) { return r <= t.hasta; });
+  }
+
+  function cotizacionReta(costeAnual, opciones) {
+    const p = PARAMETROS.reta;
+    const o = normalizarOpciones(opciones);
+    // Para la Seguridad Social cuenta todo lo que cobra de la sociedad por su trabajo (también
+    // la cuota, si se la paga ella) menos un 3 % de gastos genéricos.
+    const rendimientoMensual = Math.max(0, costeAnual) * (1 - p.gastosGenericosSocietario) / 12;
+    const tramo = tramoReta(rendimientoMensual);
+    const baseMinima = Math.max(tramo.min, p.baseMinimaSocietario);
+    const baseMaxima = Math.max(tramo.max, p.baseMinimaSocietario);
+    const base = o.baseReta === null ? baseMinima : Math.min(Math.max(o.baseReta, baseMinima), baseMaxima);
+    // Sin actividad no hay alta ni cuota.
+    const cotizada = costeAnual > 0 ? base : 0;
+    const t = p.tipos;
+    const mensual = {
+      contingenciasComunes: cotizada * t.contingenciasComunes,
+      contingenciasProfesionales: cotizada * t.contingenciasProfesionales,
+      ceseActividad: cotizada * t.ceseActividad,
+      formacion: cotizada * t.formacion,
+      mei: cotizada * t.mei
+    };
+    const cuotaMensual = suma(mensual);
+    return {
+      rendimientoMensual: rendimientoMensual,
+      tramo: tramo,
+      baseMinima: baseMinima,
+      baseMaxima: baseMaxima,
+      base: cotizada,
+      detalleMensual: mensual,
+      cuotaMensual: cuotaMensual,
+      cuotaAnual: cuotaMensual * 12
+    };
+  }
+
+  // Lo que le queda al socio en el año: el IRPF trata la cuota como rendimiento en especie
+  // (si la paga la sociedad) y a la vez como gasto deducible, así que no depende de quién la pague.
+  function netoAnualSocio(costeAnual, opciones) {
+    const cuota = cotizacionReta(costeAnual, opciones).cuotaAnual;
+    return costeAnual - cuota - irpf(costeAnual, cuota, opciones).aPagar;
+  }
+
+  // La nómina de un mes normal: si la cuota la paga la sociedad, va como sueldo en especie y
+  // también lleva retención; si la paga el socio, sale de lo que cobra.
+  function nominaSocio(costeAnual, cuota, tipoRetencion, o) {
+    const bruto = o.cuotaPagaSociedad ? costeAnual - cuota : costeAnual;
+    const especieMes = o.cuotaPagaSociedad ? cuota / 12 : 0;
+    const nomina = {
+      bruto: bruto / o.pagas,
+      especie: especieMes,
+      irpf: tipoRetencion * (bruto / o.pagas + especieMes),
+      cuotaSocio: o.cuotaPagaSociedad ? 0 : cuota / 12
+    };
+    nomina.neto = nomina.bruto - nomina.irpf;
+    nomina.disponible = nomina.neto - nomina.cuotaSocio;
+    return nomina;
+  }
+
+  // Lo que le queda un mes normal: la nómina menos la retención y, si la paga el socio, la cuota.
+  function netoMensualSocio(costeAnual, opciones) {
+    const o = normalizarOpciones(opciones);
+    const cuota = cotizacionReta(costeAnual, o).cuotaAnual;
+    return nominaSocio(costeAnual, cuota, irpf(costeAnual, cuota, o).tipoRetencion, o).disponible;
+  }
+
+  function calcularSocioDesdeCoste(costeAnual, opciones) {
+    const o = normalizarOpciones(opciones);
+    const reta = cotizacionReta(costeAnual, o);
+    const cuota = reta.cuotaAnual;
+    // Para el IRPF, el rendimiento íntegro es todo lo que paga la sociedad y la cuota es gasto.
+    const renta = irpf(costeAnual, cuota, o);
+    const bruto = o.cuotaPagaSociedad ? costeAnual - cuota : costeAnual;
+    const neto = costeAnual - cuota - renta.aPagar;
+
+    const nomina = nominaSocio(costeAnual, cuota, renta.tipoRetencion, o);
+    let pagaExtra = null;
+    if (o.pagas === 14) {
+      pagaExtra = { bruto: bruto / 14, especie: 0, irpf: renta.tipoRetencion * bruto / 14, cuotaSocio: 0 };
+      pagaExtra.neto = pagaExtra.bruto - pagaExtra.irpf;
+      pagaExtra.disponible = pagaExtra.neto;
+    }
+
+    const avisos = [];
+    if (costeAnual > 0 && neto < 0) avisos.push({ codigo: 'cuota-supera' });
+    if (renta.obligadoADeclarar) {
+      const netoEnUmbral = netoAnualSocio(PARAMETROS.irpf.umbralObligacionDeclarar, o);
+      if (neto < netoEnUmbral) avisos.push({ codigo: 'escalon-20000', perdida: netoEnUmbral - neto });
+    }
+    // Al subir a un tramo con una base mínima más alta, la cuota sube de golpe y el neto baja.
+    const tramoAnterior = PARAMETROS.reta.tramos[PARAMETROS.reta.tramos.indexOf(reta.tramo) - 1];
+    if (tramoAnterior) {
+      const limite = Math.floor(tramoAnterior.hasta * 12 / (1 - PARAMETROS.reta.gastosGenericosSocietario));
+      const netoEnLimite = netoAnualSocio(limite, o);
+      if (neto < netoEnLimite) avisos.push({ codigo: 'escalon-tramo', limite: limite, perdida: netoEnLimite - neto });
+    }
+
+    // Cómo quedaría como asalariado con el mismo coste para la empresa.
+    const asalariado = costeAnual > 0
+      ? calcular({ modo: 'coste', periodo: 'anual', importe: costeAnual, pagas: o.pagas, hijos: o.hijos, menores6: o.menores6, deduccionCompartida: o.deduccionCompartida })
+      : null;
+
+    return {
+      tipo: 'socio',
+      opciones: o,
+      costeAnual: costeAnual,
+      brutoAnual: bruto,
+      netoAnual: neto,
+      reta: reta,
+      irpf: renta,
+      tipoEfectivoIrpf: costeAnual > 0 ? renta.aPagar / costeAnual : 0,
+      netoPorCada100: netoAnualSocio(costeAnual + 100, o) - neto,
+      costePorCada100: 100,
+      nomina: nomina,
+      pagaExtra: pagaExtra,
+      avisos: avisos,
+      comparacionAsalariado: asalariado && { netoAnual: asalariado.netoAnual, brutoAnual: asalariado.brutoAnual }
+    };
+  }
+
+  // Donde el neto puede bajar de golpe: los tramos de retención y, para el socio, los del RETA.
+  const CORTES_RETENCION = PARAMETROS.irpf.tablaRetenciones
+    .map(function (fila) { return fila[0]; })
+    .filter(Number.isFinite);
+  const CORTES_SOCIO = CORTES_RETENCION.concat(PARAMETROS.reta.tramos
+    .map(function (t) { return t.hasta * 12 / (1 - PARAMETROS.reta.gastosGenericosSocietario); })
+    .filter(Number.isFinite))
+    .sort(function (a, b) { return a - b; });
+
   function biseccion(f, objetivo, bajo, alto) {
     for (let i = 0; i < 200 && alto - bajo > 1e-7; i++) {
       const medio = (bajo + alto) / 2;
@@ -327,14 +503,12 @@
     return alto;
   }
 
-  // Busca el bruto más bajo con el que `f(bruto)` alcanza `objetivo`. `f` crece dentro de
-  // cada tramo de la tabla de retenciones, pero puede bajar de golpe al pasar al siguiente.
-  function invertir(f, objetivo) {
+  // Busca el importe más bajo con el que `f` alcanza `objetivo`. `f` crece entre dos
+  // `cortes` consecutivos, pero puede bajar de golpe al pasar uno.
+  function invertir(f, objetivo, cortes) {
     if (!(objetivo > 0)) return 0;
     let bajo = 0;
-    for (const fila of PARAMETROS.irpf.tablaRetenciones) {
-      const corte = fila[0];
-      if (corte === Infinity) break;
+    for (const corte of cortes) {
       if (f(corte) >= objetivo) return biseccion(f, objetivo, bajo, corte);
       bajo = corte;
     }
@@ -352,6 +526,7 @@
    * mensual es el de cada paga y el coste mensual es siempre 1/12 del anual.
    */
   function calcular(entrada) {
+    if (entrada.tipo === 'socio') return calcularSocio(entrada);
     const o = normalizarOpciones(entrada);
     const importe = Math.max(0, Number(entrada.importe) || 0);
     const mensual = entrada.periodo === 'mensual';
@@ -361,15 +536,42 @@
       const f = mensual
         ? function (b) { return netoMensual(b, o); }
         : function (b) { return netoAnual(b, o); };
-      bruto = invertir(f, importe);
+      bruto = invertir(f, importe, CORTES_RETENCION);
     } else if (entrada.modo === 'coste') {
       const coste = mensual ? importe * 12 : importe;
-      bruto = invertir(function (b) { return b + cotizaciones(b, o).totalEmpresa; }, coste);
+      bruto = invertir(function (b) { return b + cotizaciones(b, o).totalEmpresa; }, coste, CORTES_RETENCION);
     } else {
       bruto = mensual ? importe * o.pagas : importe;
     }
 
     return calcularDesdeBruto(bruto, o);
+  }
+
+  /**
+   * Igual que `calcular`, para un socio en el RETA. El coste es lo que paga la sociedad por
+   * su trabajo; el bruto, el sueldo de la nómina (sin la cuota, aunque la pague la sociedad).
+   */
+  function calcularSocio(entrada) {
+    const o = normalizarOpciones(entrada);
+    const importe = Math.max(0, Number(entrada.importe) || 0);
+    const mensual = entrada.periodo === 'mensual';
+    let coste;
+
+    if (entrada.modo === 'neto') {
+      const f = mensual
+        ? function (c) { return netoMensualSocio(c, o); }
+        : function (c) { return netoAnualSocio(c, o); };
+      coste = invertir(f, importe, CORTES_SOCIO);
+    } else if (entrada.modo === 'bruto') {
+      const bruto = mensual ? importe * o.pagas : importe;
+      coste = o.cuotaPagaSociedad
+        ? invertir(function (c) { return c - cotizacionReta(c, o).cuotaAnual; }, bruto, CORTES_SOCIO)
+        : bruto;
+    } else {
+      coste = mensual ? importe * 12 : importe;
+    }
+
+    return calcularSocioDesdeCoste(coste, o);
   }
 
   /**
@@ -415,6 +617,10 @@
     netoAnual: netoAnual,
     netoMensual: netoMensual,
     calcularDesdeBruto: calcularDesdeBruto,
+    tramoReta: tramoReta,
+    cotizacionReta: cotizacionReta,
+    netoAnualSocio: netoAnualSocio,
+    calcularSocioDesdeCoste: calcularSocioDesdeCoste,
     calcular: calcular,
     parseImporte: parseImporte
   };

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Calculadora de coste de empresa y sueldo neto en Bizkaia 2026</title>
-  <meta name="description" content="Cuánto cuesta un puesto de trabajo a la empresa y cuánto llega neto a la cuenta del trabajador en Bizkaia en 2026, con el IRPF foral, la tabla de retenciones y las cotizaciones a la Seguridad Social.">
+  <meta name="description" content="Cuánto cuesta un puesto de trabajo a la empresa y cuánto llega neto a la cuenta del trabajador en Bizkaia en 2026, con el IRPF foral, la tabla de retenciones y las cotizaciones a la Seguridad Social. También para socios autónomos en nómina de su sociedad, con la cuota del RETA.">
   <link rel="canonical" href="https://davsed.github.io/calculadora-bizkaia/">
   <meta name="theme-color" content="#f3f2ee" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
@@ -20,7 +20,7 @@
     "@type": "WebApplication",
     "name": "Calculadora de coste de empresa y sueldo neto en Bizkaia 2026",
     "url": "https://davsed.github.io/calculadora-bizkaia/",
-    "description": "Calcula cuánto cuesta un puesto de trabajo a la empresa y cuánto llega neto al trabajador en Bizkaia, con el IRPF foral, la tabla de retenciones y las cotizaciones a la Seguridad Social de 2026.",
+    "description": "Calcula cuánto cuesta un puesto de trabajo a la empresa y cuánto llega neto al trabajador en Bizkaia, con el IRPF foral, la tabla de retenciones y las cotizaciones a la Seguridad Social de 2026. También para socios autónomos en nómina de su sociedad, con la cuota del RETA.",
     "applicationCategory": "FinanceApplication",
     "operatingSystem": "Web",
     "inLanguage": "es",
@@ -147,7 +147,9 @@
     }
     .importe.porcentaje input { font-size: 1rem; font-weight: 400; padding: 8px 32px 8px 10px; }
     .importe.porcentaje .sufijo { font-size: 1rem; right: 12px; }
+    .importe.al-mes input { padding-right: 68px; }
     .ayuda { font-size: 0.85rem; color: var(--muted); margin: 6px 0 0; }
+    .aviso-tipo { margin: -10px 0 16px; }
     .error { color: var(--ink); font-size: 0.85rem; margin: 6px 0 0; }
     .error::before { content: "⚠ "; }
 
@@ -267,18 +269,27 @@
   <div class="contenedor">
     <header class="cabecera">
       <h1>Coste de empresa y sueldo neto en Bizkaia 2026</h1>
-      <p class="entradilla">Cuánto cuesta un puesto de trabajo a la empresa, cuánto de eso llega a la cuenta del trabajador y a dónde va el resto, con el IRPF foral de Bizkaia y las cotizaciones a la Seguridad Social de 2026.</p>
+      <p class="entradilla">Cuánto cuesta un puesto de trabajo a la empresa, cuánto de eso llega a la cuenta del trabajador y a dónde va el resto, con el IRPF foral de Bizkaia y las cotizaciones a la Seguridad Social de 2026. También para socios autónomos que cobran por nómina de su propia sociedad.</p>
     </header>
 
     <main class="rejilla">
       <form class="tarjeta formulario" id="formulario" novalidate>
         <h2 class="oculto">Datos</h2>
         <fieldset class="segmentado segmentado-auto">
+          <legend>¿Quién cobra?</legend>
+          <div class="opciones">
+            <label><input type="radio" name="tipo" value="asalariado" checked><span>Asalariado</span></label>
+            <label><input type="radio" name="tipo" value="socio"><span>Socio autónomo</span></label>
+          </div>
+        </fieldset>
+        <p class="ayuda aviso-tipo" id="ayuda-socio" hidden>Socio que controla su sociedad (SL) y está en el RETA. Es administrador sin sueldo por estatutos y cobra por nómina por su trabajo.</p>
+
+        <fieldset class="segmentado segmentado-auto">
           <legend>¿Qué importe conoces?</legend>
           <div class="opciones">
             <label><input type="radio" name="modo" value="bruto" checked><span>Bruto</span></label>
             <label><input type="radio" name="modo" value="neto"><span>Neto</span></label>
-            <label><input type="radio" name="modo" value="coste"><span>Coste empresa</span></label>
+            <label><input type="radio" name="modo" value="coste"><span id="texto-modo-coste">Coste empresa</span></label>
           </div>
         </fieldset>
 
@@ -307,8 +318,26 @@
           </div>
         </fieldset>
 
+        <div id="opciones-socio" hidden>
+          <fieldset class="segmentado">
+            <legend>¿Quién paga la cuota de autónomo?</legend>
+            <div class="opciones">
+              <label><input type="radio" name="pagaCuota" value="sociedad" checked><span>La sociedad</span></label>
+              <label><input type="radio" name="pagaCuota" value="socio"><span>El socio</span></label>
+            </div>
+          </fieldset>
+          <div class="campo">
+            <label class="etiqueta" for="base-reta">Base de cotización del RETA</label>
+            <div class="importe porcentaje al-mes">
+              <input class="campo-texto" id="base-reta" name="baseReta" type="text" inputmode="decimal" autocomplete="off" placeholder="La mínima" aria-describedby="ayuda-base-reta">
+              <span class="sufijo" aria-hidden="true">€/mes</span>
+            </div>
+            <p class="ayuda" id="ayuda-base-reta">Déjalo vacío para usar la mínima, que es lo habitual.</p>
+          </div>
+        </div>
+
         <div class="campo">
-          <label class="etiqueta" for="hijos">Hijos que conviven con el trabajador</label>
+          <label class="etiqueta" for="hijos" id="etiqueta-hijos">Hijos que conviven con el trabajador</label>
           <select id="hijos" name="hijos">
             <option value="0" selected>Ninguno</option>
             <option value="1">1</option>
@@ -325,7 +354,7 @@
           </div>
         </div>
 
-        <details class="mas">
+        <details class="mas" id="opciones-asalariado">
           <summary>Contrato y empresa</summary>
           <div class="campo">
             <label class="etiqueta" for="contrato">Tipo de contrato</label>
@@ -350,19 +379,19 @@
 
         <div class="flujo">
           <div class="cifra">
-            <p class="cifra-etiqueta">Cuesta a la empresa</p>
+            <p class="cifra-etiqueta" id="etiqueta-cifra-coste">Cuesta a la empresa</p>
             <p class="cifra-valor" id="cifra-coste"></p>
             <p class="cifra-detalle" id="detalle-coste"></p>
           </div>
           <span class="flecha" aria-hidden="true"></span>
           <div class="cifra">
-            <p class="cifra-etiqueta">Sueldo bruto</p>
+            <p class="cifra-etiqueta" id="etiqueta-cifra-bruto">Sueldo bruto</p>
             <p class="cifra-valor" id="cifra-bruto"></p>
             <p class="cifra-detalle" id="detalle-bruto"></p>
           </div>
           <span class="flecha" aria-hidden="true"></span>
           <div class="cifra cifra-neto">
-            <p class="cifra-etiqueta">Llega al trabajador</p>
+            <p class="cifra-etiqueta" id="etiqueta-cifra-neto">Llega al trabajador</p>
             <p class="cifra-valor" id="cifra-neto"></p>
             <p class="cifra-detalle" id="detalle-neto"></p>
           </div>
@@ -371,7 +400,7 @@
         <div class="proporcion">
           <p class="proporcion-titular">
             <span class="proporcion-numero" id="porcentaje-neto"></span>
-            <span class="proporcion-texto">de lo que paga la empresa llega a la cuenta del trabajador</span>
+            <span class="proporcion-texto" id="proporcion-texto">de lo que paga la empresa llega a la cuenta del trabajador</span>
           </p>
           <div class="medidor" id="medidor" role="img"><span class="medidor-neto" id="medidor-neto"></span></div>
           <div class="medidor-leyenda">
@@ -380,9 +409,10 @@
           </div>
         </div>
 
+        <p class="dato" id="comparacion" hidden></p>
         <div class="avisos" id="avisos"></div>
 
-        <h3>Del coste de la empresa al neto del trabajador</h3>
+        <h3 id="titulo-cascada">Del coste de la empresa al neto del trabajador</h3>
         <p class="subtitulo">Importes del año y qué parte del coste total es cada uno</p>
         <ol class="cascada" id="cascada"></ol>
 
@@ -419,12 +449,15 @@
         <li><strong>IRPF foral de Bizkaia.</strong> Al bruto se le restan las cotizaciones y la bonificación por rendimientos del trabajo: 8.000 € si el rendimiento neto no pasa de 14.800 €, bajando hasta 3.000 € a partir de 23.000 €. A lo que queda se le aplica la tarifa foral, del 23&nbsp;% al 49&nbsp;%. A la cuota se le resta la minoración general de 1.615 € y, si hay hijos, la deducción por descendientes (682 € por el primero, 844 € por el segundo, 1.421 € por el tercero… y 394 € más por cada menor de 6 años).</li>
         <li><strong>Retención en la nómina.</strong> Sale de la tabla oficial de retenciones de Bizkaia de 2026, según el bruto anual y el número de hijos: 0&nbsp;% hasta 20.000 €, 7&nbsp;% sin hijos justo por encima y hasta un 40&nbsp;%. En los contratos de menos de un año no puede bajar del 2&nbsp;%.</li>
         <li><strong>La declaración de la renta.</strong> La diferencia entre lo retenido y el IRPF del año sale a pagar o a devolver. El neto que se muestra ya la tiene en cuenta. Con un solo pagador y hasta 20.000 € brutos no hay obligación de declarar: el IRPF se queda en lo retenido, y si se retuvo de más compensa declarar para recuperarlo.</li>
-        <li><strong>No se incluyen</strong> otros ingresos, aportaciones a EPSV o planes de pensiones, la tributación conjunta, la discapacidad ni deducciones como la de alquiler de vivienda.</li>
+        <li><strong>Socio autónomo.</strong> Es el socio que controla su sociedad y cotiza en el RETA, con un cargo de administrador sin sueldo y una nómina por su trabajo. La sociedad no paga Seguridad Social de empresa. La cuota de autónomo sale de sus rendimientos: lo que cobra de la sociedad menos un 3&nbsp;%, repartido por meses. Con eso se mira el tramo de la tabla de 2026 y se aplica un 31,50&nbsp;% a la base mínima del tramo, que para un socio nunca baja de 1.424,40 € al mes. En el IRPF de Bizkaia, lo que cobra por su trabajo es rendimiento del trabajo y la cuota se resta como gasto; si la paga la sociedad, cuenta además como sueldo en especie, así que el resultado es el mismo la pague quien la pague. La retención sale de la tabla general, porque el cargo de administrador no se cobra. Al pasar de un tramo a otro la cuota mínima sube de golpe, así que un poco más de sueldo puede dejar menos neto: la calculadora lo avisa.</li>
+        <li><strong>No se incluyen</strong> otros ingresos (en el caso del socio, los dividendos de la sociedad, que también cuentan para la cuota de autónomo), aportaciones a EPSV o planes de pensiones, la tributación conjunta, la discapacidad, la tarifa plana de autónomos ni deducciones como la de alquiler de vivienda.</li>
       </ul>
 
       <h2 style="margin-top: 24px">Preguntas frecuentes</h2>
       <h3>¿Qué parte de lo que paga la empresa llega al trabajador?</h3>
       <p>Depende del sueldo. Hasta 20.000 € brutos llega en torno al 71&nbsp;%, porque no se paga IRPF; entre 25.000 y 40.000 €, entre el 57&nbsp;% y el 61&nbsp;%; y a partir de unos 50.000 €, alrededor del 54&nbsp;%: el IRPF sigue subiendo, pero por encima del tope de cotización la empresa cotiza proporcionalmente menos. El resto se lo quedan la Seguridad Social (lo que cotizan la empresa y el trabajador) y Hacienda (el IRPF).</p>
+      <h3>¿Qué le compensa más a un socio, estar en nómina de su sociedad o como asalariado?</h3>
+      <p>Depende de lo que pague la sociedad. Por debajo de unos 19.000 € al año le llega más neto a un asalariado, porque la cuota mínima de un socio (unos 5.400 € al año) pesa mucho. Entre 20.000 y 25.000 € salen parecidos. A partir de ahí al socio le llega bastante más, porque no hay cotización de empresa y su cuota va por la base mínima: unos 2.100 € más al año con 30.000 € de coste y unos 7.000 € más con 60.000 €. A cambio, sus prestaciones (jubilación, incapacidad) se calculan sobre esa base, más baja. La calculadora muestra la comparación con el mismo coste.</p>
       <h3>¿Por qué el IRPF de Bizkaia es distinto al del resto de España?</h3>
       <p>Bizkaia tiene su propia normativa del IRPF (Norma Foral 13/2013). Hay una sola tarifa, del 23&nbsp;% al 49&nbsp;%, en lugar de la estatal más la autonómica, y no existe el mínimo personal: en su lugar se resta a la cuota una minoración fija y al sueldo la bonificación por rendimientos del trabajo.</p>
       <h3>¿Qué cambia entre cobrar en 12 o en 14 pagas?</h3>
@@ -442,7 +475,7 @@
   </div>
 
   <noscript><p style="text-align:center">La calculadora necesita JavaScript activado.</p></noscript>
-  <script src="calculadora.js?v=2026.3"></script>
-  <script src="app.js?v=2026.3"></script>
+  <script src="calculadora.js?v=2026.4"></script>
+  <script src="app.js?v=2026.4"></script>
 </body>
 </html>
