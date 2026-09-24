@@ -34,6 +34,11 @@
     return Number.isInteger(x) ? eurosSinCentimos.format(x) : euros.format(x);
   }
 
+  // Para importes aproximados ("unos 59 €").
+  function aproximado(x) {
+    return eurosSinCentimos.format(Math.round(x));
+  }
+
   function el(etiqueta, atributos, hijos) {
     const nodo = document.createElement(etiqueta);
     Object.keys(atributos || {}).forEach(function (clave) {
@@ -106,9 +111,8 @@
     const neto = {
       etiqueta: 'Neto al mes',
       valor: dinero(r.nomina.neto),
-      detalle: r.pagaExtra
-        ? 'Más 2 pagas extra de ' + dinero(r.pagaExtra.neto) + '. ' + dinero(r.netoAnual) + ' al año.'
-        : dinero(r.netoAnual) + ' al año'
+      detalle: (r.pagaExtra ? 'Más 2 pagas extra de ' + dinero(r.pagaExtra.neto) + '. ' : '') +
+        'Neto del año, con la declaración: ' + dinero(r.netoAnual) + '.'
     };
     const coste = {
       etiqueta: 'Coste anual para la empresa',
@@ -130,7 +134,7 @@
     const filas = [
       ['Bruto', n.bruto, x && x.bruto],
       ['Seguridad Social', -n.cotizacion, x && -x.cotizacion],
-      ['IRPF (' + porcentaje.format(r.tipoEfectivoIrpf) + ')', -n.irpf, x && -x.irpf],
+      ['Retención IRPF (' + porcentajeEntero.format(r.irpf.tipoRetencion) + ')', -n.irpf, x && -x.irpf],
       ['Neto', n.neto, x && x.neto, 'total']
     ];
     $('tabla-nomina').querySelector('.columna-mes').textContent = x ? 'Mes normal' : 'Al mes';
@@ -144,6 +148,27 @@
       ]));
     });
     $('tabla-nomina').querySelector('.columna-extra').hidden = !x;
+    $('nota-nomina').textContent = textoDeclaracion(r);
+  }
+
+  // Qué pasa con el IRPF del año: lo retenido frente a lo que sale en la declaración.
+  function textoDeclaracion(r) {
+    const ir = r.irpf;
+    const tabla = C.tipoRetencion(r.brutoAnual, Object.assign({}, r.opciones, { contrato: 'indefinido' }));
+    const minimo = ir.tipoRetencion > tabla ? ' (el mínimo en contratos de menos de un año)' : '';
+    const retencion = ir.tipoRetencion > 0
+      ? 'Te retienen un ' + porcentajeEntero.format(ir.tipoRetencion) + minimo + ', según la tabla de retenciones de Bizkaia de ' + P.anio + '. '
+      : 'Con este sueldo la tabla de retenciones de Bizkaia no te retiene IRPF. ';
+    if (!(r.brutoAnual > 0)) return '';
+    if (!ir.obligadoADeclarar) {
+      const sinObligacion = 'Con un solo pagador y hasta ' + importeRedondo(P.irpf.umbralObligacionDeclarar) + ' brutos no estás obligado a hacer la declaración';
+      if (ir.resultadoDeclaracion < -0.5) return retencion + sinObligacion + ', pero te conviene: te devolverían unos ' + aproximado(-ir.resultadoDeclaracion) + '.';
+      if (ir.retencion > 0) return retencion + sinObligacion + ', así que tu IRPF se queda en lo retenido.';
+      return retencion + sinObligacion + ', así que no pagas IRPF (si no tienes otros ingresos).';
+    }
+    if (ir.resultadoDeclaracion > 0.5) return retencion + 'En la declaración de la renta te saldrá a pagar la diferencia: unos ' + aproximado(ir.resultadoDeclaracion) + '.';
+    if (ir.resultadoDeclaracion < -0.5) return retencion + 'En la declaración de la renta te devolverán unos ' + aproximado(-ir.resultadoDeclaracion) + '.';
+    return retencion + 'Cubre casi justo el IRPF del año, así que la declaración saldrá a cero o casi.';
   }
 
   const PARTES = [
@@ -259,13 +284,20 @@
     detalle('MEI (' + tipo.format(t.mei) + ')', -ss.trabajador.mei);
     if (ss.trabajador.solidaridad > 0) detalle('Cotización de solidaridad', -ss.trabajador.solidaridad);
 
-    fila('IRPF', -ir.aPagar);
+    fila('IRPF del año (' + porcentaje.format(r.tipoEfectivoIrpf) + ')', -ir.aPagar);
     detalle('Rendimiento neto (bruto menos Seguridad Social)', ir.rendimientoNeto);
     detalle('Bonificación del trabajo', -ir.bonificacion);
     detalle('Base liquidable', ir.baseLiquidable);
     detalle('Cuota según la tarifa', ir.cuotaIntegra);
     detalle('Minoración de cuota', -ir.minoracion);
     if (o.hijos > 0) detalle('Deducción por hijos', -ir.deduccionDescendientes);
+    detalle('Cuota líquida', ir.cuotaLiquida);
+    detalle('Retenido en nómina (' + porcentajeEntero.format(ir.tipoRetencion) + ')', ir.retencion);
+    if (ir.obligadoADeclarar || ir.resultadoDeclaracion < -0.005) {
+      detalle(ir.resultadoDeclaracion >= 0 ? 'A pagar en la declaración' : 'A devolver en la declaración', Math.abs(ir.resultadoDeclaracion));
+    } else {
+      detalle('Sin obligación de declarar: pagas lo retenido', ir.aPagar);
+    }
 
     fila('Sueldo neto', r.netoAnual, 'total');
 
@@ -300,8 +332,8 @@
     switch (aviso.codigo) {
       case 'bajo-smi':
         return ['Ojo: ', 'es menos que el salario mínimo de ' + P.anio + ' a jornada completa (' + importeRedondo(P.smiAnual) + ' brutos al año). Si trabajas a jornada parcial, es normal.', ICONO_AVISO];
-      case 'sin-obligacion':
-        return ['Declaración: ', 'con un solo pagador y hasta ' + importeRedondo(P.irpf.umbralObligacionDeclarar) + ' brutos al año no estás obligado a hacerla. Si no la haces, tu IRPF es lo que te hayan retenido en nómina, que puede no coincidir con esta cifra; si te retuvieron más, te conviene declarar para que te devuelvan la diferencia.', ICONO_INFO];
+      case 'escalon-20000':
+        return ['Ojo: ', 'al pasar de ' + importeRedondo(P.irpf.umbralObligacionDeclarar) + ' brutos empiezan las retenciones y tienes que hacer la declaración. Con este sueldo cobras ' + dinero(aviso.perdida) + ' netos al año menos que con ' + importeRedondo(P.irpf.umbralObligacionDeclarar) + ' justos.', ICONO_AVISO];
       case 'solidaridad':
         return ['Base máxima: ', 'tu sueldo supera el tope de cotización (' + importeRedondo(P.seguridadSocial.baseMaximaMensual) + ' al mes). Por el exceso solo se paga la cotización de solidaridad.', ICONO_INFO];
       default:
@@ -321,9 +353,10 @@
       caja.appendChild(nodo);
     });
 
-    $('dato-marginal').textContent = r.brutoAnual > 0
-      ? 'Si tu bruto anual sube 100 €, tu neto sube ' + dinero(r.netoPorCada100) + '.'
-      : '';
+    const marginal = $('dato-marginal');
+    if (!(r.brutoAnual > 0)) marginal.textContent = '';
+    else if (r.netoPorCada100 >= 0) marginal.textContent = 'Si tu bruto anual sube 100 €, tu neto del año sube ' + dinero(r.netoPorCada100) + '.';
+    else marginal.textContent = 'Si tu bruto anual subiera 100 €, pasarías de ' + importeRedondo(P.irpf.umbralObligacionDeclarar) + ' y tu neto del año bajaría ' + dinero(-r.netoPorCada100) + '.';
   }
 
   // === Enlace compartible ===

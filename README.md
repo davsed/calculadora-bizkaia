@@ -8,9 +8,8 @@ https://davsed.github.io/calculadora-bizkaia/
 
 - **Cotizaciones de 2026** del trabajador y de la empresa: contingencias comunes, desempleo (indefinido o temporal), FOGASA, formación profesional, MEI y accidentes de trabajo, con la base máxima y la cotización de solidaridad.
 - **IRPF foral de Bizkaia**: bonificación de los rendimientos del trabajo, tarifa del 23 % al 49 %, minoración de cuota y deducción por hijos (entera o a medias con el otro progenitor).
-- **La nómina** de un mes normal y de la paga extra, con 12 o 14 pagas.
-
-El IRPF que muestra es el que corresponde pagar en el año (el de la declaración), repartido entre las pagas. La retención real de la nómina sale de la tabla de retenciones de Bizkaia y puede ser algo distinta.
+- **La nómina** de un mes normal y de la paga extra, con 12 o 14 pagas, con la retención de la tabla oficial de Bizkaia (y el mínimo del 2 % en contratos de menos de un año).
+- **La declaración de la renta**: lo que sale a pagar o a devolver comparando lo retenido con el IRPF del año. Hasta 20.000 € brutos con un solo pagador no hay obligación de declarar, así que el IRPF se queda en lo retenido salvo que compense declarar.
 
 No tiene en cuenta otros ingresos, aportaciones a EPSV o planes de pensiones, la tributación conjunta, la discapacidad ni otras deducciones.
 
@@ -28,8 +27,9 @@ Están todos en `PARAMETROS`, al principio de `calculadora.js`:
 | Bonificación del trabajo | 8.000 € hasta 14.800 €, baja hasta 3.000 € desde 23.000 € | NF 13/2013, art. 23 (NF 2/2025) |
 | Minoración de cuota | 1.615 € | NF 13/2013, art. 77 (NF 7/2025) |
 | Deducción por hijos | 682 / 844 / 1.421 / 1.680 / 2.195 € + 394 € por menor de 6 años | NF 13/2013, art. 79 (NF 7/2025) |
+| Tabla de retenciones | 0 % hasta 20.000 € … 40 % desde 236.060 €, según hijos; mínimo 2 % en contratos de menos de un año | Reglamento del IRPF (DF 47/2014), art. 88 (DF 134/2025) |
 
-Comprobados en septiembre de 2026 con la [Orden PJC/297/2026 en el BOE](https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-7296) y con las comparativas oficiales de Hacienda de Bizkaia de los cambios del IRPF en [2026](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01877) y [2025](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01876). Los tests comprueban la tarifa con las cuotas acumuladas de la tabla oficial.
+Comprobados en septiembre de 2026 con la [Orden PJC/297/2026 en el BOE](https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-7296), con las comparativas oficiales de Hacienda de Bizkaia de los cambios del IRPF en [2026](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01877) y [2025](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01876), y con la [tabla de retenciones de 2026](https://www.bizkaia.eus/documents/26740887/26976067/tabla-de-retenciones-2026-01.pdf) y el [Reglamento del IRPF](https://www.bizkaia.eus/documents/880307/15187815/ca_47_2014.pdf). Los tests comprueban la tarifa con las cuotas acumuladas de la tabla oficial.
 
 ## Estructura
 

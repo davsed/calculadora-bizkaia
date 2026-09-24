@@ -16,6 +16,7 @@
   // Seguridad Social: Orden PJC/297/2026 (régimen general).
   // IRPF: Norma Foral 13/2013 de Bizkaia, con la bonificación del trabajo de la
   // NF 2/2025 y la deflactación del 2 % de la NF 7/2025 (Presupuestos 2026).
+  // Retenciones: art. 88 del Reglamento del IRPF (DF 47/2014), según el DF 134/2025.
   const PARAMETROS = {
     anio: 2026,
     seguridadSocial: {
@@ -67,7 +68,48 @@
       deduccionMenor6: 394,
       // Con solo rendimientos del trabajo (un pagador) hasta este bruto anual no hay
       // obligación de declarar: se paga lo retenido en nómina.
-      umbralObligacionDeclarar: 20000
+      umbralObligacionDeclarar: 20000,
+      // Tabla general de retenciones sobre el bruto anual. Cada fila: [hasta, % según el
+      // número de descendientes: 0, 1, 2, 3, 4, 5 y más de 5].
+      tablaRetenciones: [
+        [20000, [0, 0, 0, 0, 0, 0, 0]],
+        [20510, [7, 5, 3, 0, 0, 0, 0]],
+        [21300, [8, 6, 4, 1, 0, 0, 0]],
+        [22150, [9, 7, 5, 2, 0, 0, 0]],
+        [23220, [10, 9, 7, 4, 0, 0, 0]],
+        [24050, [11, 10, 8, 5, 1, 0, 0]],
+        [25410, [12, 11, 9, 6, 3, 0, 0]],
+        [27440, [13, 12, 10, 7, 4, 0, 0]],
+        [29790, [14, 13, 11, 9, 6, 2, 0]],
+        [32610, [15, 14, 13, 10, 8, 4, 0]],
+        [36350, [16, 15, 14, 12, 9, 6, 0]],
+        [40670, [17, 16, 15, 13, 11, 8, 0]],
+        [44560, [18, 17, 16, 15, 13, 10, 2]],
+        [48060, [19, 18, 17, 16, 14, 12, 4]],
+        [52020, [20, 19, 18, 17, 15, 13, 7]],
+        [56780, [21, 20, 20, 18, 17, 15, 9]],
+        [61820, [22, 21, 21, 20, 18, 16, 11]],
+        [65710, [23, 22, 22, 21, 19, 18, 12]],
+        [70080, [24, 23, 23, 22, 21, 19, 14]],
+        [75020, [25, 25, 24, 23, 22, 20, 16]],
+        [80730, [26, 26, 25, 24, 23, 22, 17]],
+        [86770, [27, 27, 26, 25, 24, 23, 19]],
+        [92190, [28, 28, 27, 26, 25, 24, 21]],
+        [98350, [29, 29, 28, 27, 27, 25, 22]],
+        [105380, [30, 30, 29, 29, 28, 27, 23]],
+        [113180, [31, 31, 30, 30, 29, 28, 25]],
+        [122030, [32, 32, 31, 31, 30, 29, 26]],
+        [132200, [33, 33, 32, 32, 31, 30, 28]],
+        [144140, [34, 34, 33, 33, 32, 32, 29]],
+        [157300, [35, 35, 34, 34, 33, 33, 31]],
+        [172280, [36, 36, 36, 35, 35, 34, 32]],
+        [190410, [37, 37, 37, 36, 36, 35, 33]],
+        [212820, [38, 38, 38, 37, 37, 36, 35]],
+        [236060, [39, 39, 39, 38, 38, 37, 36]],
+        [Infinity, [40, 40, 40, 39, 39, 39, 37]]
+      ],
+      // Mínimo de retención en contratos de duración inferior al año.
+      retencionMinimaContratoCorto: 0.02
     }
   };
 
@@ -174,6 +216,16 @@
     return o.deduccionCompartida ? total / 2 : total;
   }
 
+  function tipoRetencion(brutoAnual, opciones) {
+    const o = normalizarOpciones(opciones);
+    const p = PARAMETROS.irpf;
+    const bruto = Math.round(brutoAnual * 100) / 100;
+    const fila = p.tablaRetenciones.find(function (f) { return bruto <= f[0]; });
+    const tipo = fila[1][Math.min(o.hijos, 6)] / 100;
+    // Tratamos el contrato temporal como de menos de un año.
+    return o.contrato === 'temporal' ? Math.max(tipo, p.retencionMinimaContratoCorto) : tipo;
+  }
+
   function irpf(brutoAnual, cotizacionTrabajador, opciones) {
     const p = PARAMETROS.irpf;
     const rendimientoNeto = Math.max(0, brutoAnual - cotizacionTrabajador);
@@ -183,6 +235,12 @@
     const minoracion = Math.min(p.minoracionCuota, cuotaIntegra);
     const deduccionDescendientes = Math.min(deduccionHijos(opciones), cuotaIntegra - minoracion);
     const cuotaLiquida = cuotaIntegra - minoracion - deduccionDescendientes;
+
+    const tipo = tipoRetencion(brutoAnual, opciones);
+    const retencion = brutoAnual * tipo;
+    const obligadoADeclarar = Math.round(brutoAnual * 100) / 100 > p.umbralObligacionDeclarar;
+    // Sin obligación de declarar, solo compensa hacerlo si sale a devolver.
+    const aPagar = obligadoADeclarar ? cuotaLiquida : Math.min(cuotaLiquida, retencion);
     return {
       rendimientoNeto: rendimientoNeto,
       bonificacion: bonificacion,
@@ -191,8 +249,13 @@
       minoracion: minoracion,
       deduccionDescendientes: deduccionDescendientes,
       cuotaLiquida: cuotaLiquida,
-      aPagar: cuotaLiquida,
-      obligadoADeclarar: brutoAnual > p.umbralObligacionDeclarar
+      tipoRetencion: tipo,
+      retencion: retencion,
+      obligadoADeclarar: obligadoADeclarar,
+      // IRPF del año, contando la declaración de la renta.
+      aPagar: aPagar,
+      // Positivo: a pagar en la declaración. Negativo: a devolver.
+      resultadoDeclaracion: aPagar - retencion
     };
   }
 
@@ -201,12 +264,12 @@
     return brutoAnual - ss.totalTrabajador - irpf(brutoAnual, ss.totalTrabajador, opciones).aPagar;
   }
 
-  // Neto de una nómina normal (sin paga extra).
+  // Neto de una nómina normal (sin paga extra), con la retención de la tabla.
   function netoMensual(brutoAnual, opciones) {
     const o = normalizarOpciones(opciones);
     const ss = cotizaciones(brutoAnual, o);
-    const aPagar = irpf(brutoAnual, ss.totalTrabajador, o).aPagar;
-    return (brutoAnual - aPagar) / o.pagas - ss.totalTrabajador / 12;
+    const retencion = brutoAnual * tipoRetencion(brutoAnual, o);
+    return (brutoAnual - retencion) / o.pagas - ss.totalTrabajador / 12;
   }
 
   function calcularDesdeBruto(brutoAnual, opciones) {
@@ -216,23 +279,26 @@
     const neto = brutoAnual - ss.totalTrabajador - renta.aPagar;
 
     // En una nómina normal se descuenta 1/12 de la cotización anual (las pagas extra
-    // ya están prorrateadas en la base) y la retención se reparte entre todas las pagas.
+    // ya están prorrateadas en la base) y el tipo de retención se aplica a cada paga.
     const nomina = {
       bruto: brutoAnual / o.pagas,
       cotizacion: ss.totalTrabajador / 12,
-      irpf: renta.aPagar / o.pagas
+      irpf: renta.retencion / o.pagas
     };
     nomina.neto = nomina.bruto - nomina.cotizacion - nomina.irpf;
     const pagaExtra = o.pagas === 14 ? {
       bruto: brutoAnual / 14,
       cotizacion: 0,
-      irpf: renta.aPagar / 14,
-      neto: (brutoAnual - renta.aPagar) / 14
+      irpf: renta.retencion / 14,
+      neto: (brutoAnual - renta.retencion) / 14
     } : null;
 
     const avisos = [];
     if (brutoAnual > 0 && brutoAnual < PARAMETROS.smiAnual) avisos.push({ codigo: 'bajo-smi' });
-    if (brutoAnual > 0 && !renta.obligadoADeclarar) avisos.push({ codigo: 'sin-obligacion' });
+    if (renta.obligadoADeclarar) {
+      const netoEnUmbral = netoAnual(PARAMETROS.irpf.umbralObligacionDeclarar, o);
+      if (neto < netoEnUmbral) avisos.push({ codigo: 'escalon-20000', perdida: netoEnUmbral - neto });
+    }
     if (ss.trabajador.solidaridad > 0) avisos.push({ codigo: 'solidaridad' });
 
     return {
@@ -251,12 +317,7 @@
     };
   }
 
-  // Busca por bisección el bruto con el que `f(bruto)` (creciente) alcanza `objetivo`.
-  function invertir(f, objetivo) {
-    if (!(objetivo > 0)) return 0;
-    let bajo = 0;
-    let alto = Math.max(objetivo * 2, 1000);
-    while (f(alto) < objetivo) alto *= 2;
+  function biseccion(f, objetivo, bajo, alto) {
     for (let i = 0; i < 200 && alto - bajo > 1e-7; i++) {
       const medio = (bajo + alto) / 2;
       if (f(medio) < objetivo) bajo = medio;
@@ -265,12 +326,29 @@
     return alto;
   }
 
+  // Busca el bruto más bajo con el que `f(bruto)` alcanza `objetivo`. `f` crece dentro de
+  // cada tramo de la tabla de retenciones, pero puede bajar de golpe al pasar al siguiente.
+  function invertir(f, objetivo) {
+    if (!(objetivo > 0)) return 0;
+    let bajo = 0;
+    for (const fila of PARAMETROS.irpf.tablaRetenciones) {
+      const corte = fila[0];
+      if (corte === Infinity) break;
+      if (f(corte) >= objetivo) return biseccion(f, objetivo, bajo, corte);
+      bajo = corte;
+    }
+    let alto = Math.max(bajo * 2, objetivo * 2);
+    while (f(alto) < objetivo) alto *= 2;
+    return biseccion(f, objetivo, bajo, alto);
+  }
+
   /**
    * Calcula todo a partir del importe conocido.
    * entrada: { modo: 'bruto' | 'neto' | 'coste', periodo: 'anual' | 'mensual', importe,
    *            pagas, contrato, atEp, hijos, menores6, deduccionCompartida }
-   * Con 14 pagas, el neto mensual es el de un mes normal (sin paga extra) y el bruto
-   * mensual es 1/14 del anual. El coste mensual es siempre 1/12 del anual.
+   * El neto mensual es el de la nómina de un mes normal (sin paga extra), con la retención
+   * de la tabla; el neto anual es el del año contando la declaración de la renta. El bruto
+   * mensual es el de cada paga y el coste mensual es siempre 1/12 del anual.
    */
   function calcular(entrada) {
     const o = normalizarOpciones(entrada);
@@ -331,6 +409,7 @@
     bonificacionTrabajo: bonificacionTrabajo,
     cuotaTarifa: cuotaTarifa,
     deduccionHijos: deduccionHijos,
+    tipoRetencion: tipoRetencion,
     irpf: irpf,
     netoAnual: netoAnual,
     netoMensual: netoMensual,

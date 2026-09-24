@@ -96,53 +96,104 @@ test('deducción por hijos, compartida o no, y con tope en la cuota', () => {
   assert.equal(muchos.irpf.aPagar, 0);
 });
 
-test('sueldos bajos: bonificación máxima, IRPF por ley y aviso de no obligación de declarar', () => {
-  // 15.000 €: la bonificación y la minoración dejan la cuota en 0.
-  const bajo = C.calcularDesdeBruto(15000, {});
-  assert.equal(bajo.irpf.aPagar, 0);
-  assert.ok(bajo.avisos.some((a) => a.codigo === 'bajo-smi'));
-
-  // 18.000 €: sí hay cuota aunque no haya obligación de declarar.
-  const medio = C.calcularDesdeBruto(18000, {});
-  const rn = 18000 * (1 - 0.065);
-  const base = rn - (8000 - 0.6098 * (rn - 14800));
-  cerca(medio.irpf.aPagar, base * 0.23 - 1615);
-  assert.ok(medio.avisos.some((a) => a.codigo === 'sin-obligacion'));
-
-  assert.ok(!C.calcularDesdeBruto(20001, {}).avisos.some((a) => a.codigo === 'sin-obligacion'));
+test('tabla de retenciones 2026', () => {
+  assert.equal(C.tipoRetencion(20000, {}), 0);
+  assert.equal(C.tipoRetencion(20000.01, {}), 0.07);
+  assert.equal(C.tipoRetencion(30000, {}), 0.15);
+  assert.equal(C.tipoRetencion(30000, { hijos: 2 }), 0.13);
+  assert.equal(C.tipoRetencion(250000, {}), 0.4);
+  // La última columna vale para más de cinco descendientes.
+  assert.equal(C.tipoRetencion(250000, { hijos: 6 }), 0.37);
+  assert.equal(C.tipoRetencion(250000, { hijos: 9 }), 0.37);
+  // Contrato de menos de un año: mínimo del 2 %.
+  assert.equal(C.tipoRetencion(15000, { contrato: 'temporal' }), 0.02);
+  assert.equal(C.tipoRetencion(21000, { hijos: 3, contrato: 'temporal' }), 0.02);
+  assert.equal(C.tipoRetencion(30000, { contrato: 'temporal' }), 0.15);
 });
 
-test('el neto siempre crece con el bruto', () => {
+test('hasta 20.000 € no hay obligación de declarar: se paga lo retenido', () => {
+  // Sin retención no se paga IRPF aunque la cuota salga positiva.
+  const indefinido = C.calcularDesdeBruto(18000, {});
+  const rn = 18000 * (1 - 0.065);
+  const base = rn - (8000 - 0.6098 * (rn - 14800));
+  cerca(indefinido.irpf.cuotaLiquida, base * 0.23 - 1615);
+  assert.equal(indefinido.irpf.retencion, 0);
+  assert.equal(indefinido.irpf.aPagar, 0);
+
+  // Con el 2 % mínimo se queda en lo retenido si es menos que la cuota...
+  const temporal = C.calcularDesdeBruto(18000, { contrato: 'temporal' });
+  cerca(temporal.irpf.aPagar, 360);
+  assert.equal(temporal.irpf.resultadoDeclaracion, 0);
+
+  // ...y si es más, compensa declarar para que lo devuelvan.
+  const devolver = C.calcularDesdeBruto(15000, { contrato: 'temporal' });
+  assert.equal(devolver.irpf.aPagar, 0);
+  cerca(devolver.irpf.resultadoDeclaracion, -300);
+  assert.ok(devolver.avisos.some((a) => a.codigo === 'bajo-smi'));
+});
+
+test('declaración con 30.000 €: la retención del 15 % casi cubre la cuota', () => {
+  const r = C.calcularDesdeBruto(30000, {});
+  cerca(r.irpf.retencion, 4500);
+  cerca(r.irpf.aPagar, 4495);
+  cerca(r.irpf.resultadoDeclaracion, -5);
+});
+
+test('al pasar de 20.000 € el neto del año baja de golpe', () => {
+  const justo = C.calcularDesdeBruto(20000, {});
+  const encima = C.calcularDesdeBruto(21000, {});
+  const escalon = encima.avisos.find((a) => a.codigo === 'escalon-20000');
+  assert.ok(escalon);
+  cerca(escalon.perdida, justo.netoAnual - encima.netoAnual);
+  assert.ok(!C.calcularDesdeBruto(23000, {}).avisos.some((a) => a.codigo === 'escalon-20000'));
+
+  // Fuera de ese salto, el neto del año siempre crece con el bruto.
   let anterior = -1;
   for (let bruto = 0; bruto <= 260000; bruto += 250) {
     const neto = C.netoAnual(bruto, {});
-    assert.ok(neto > anterior, `el neto baja al pasar a ${bruto} €`);
+    if (bruto !== 20250) assert.ok(neto > anterior, `el neto baja al pasar a ${bruto} €`);
     anterior = neto;
   }
 });
 
-test('nómina con 14 pagas: mes normal y paga extra suman el neto anual', () => {
+test('nómina con 14 pagas: las nóminas más la declaración dan el neto del año', () => {
   const r = C.calcularDesdeBruto(30000, { pagas: 14 });
   cerca(r.nomina.bruto, 30000 / 14);
   cerca(r.nomina.cotizacion, 1950 / 12);
-  cerca(r.nomina.neto * 12 + r.pagaExtra.neto * 2, r.netoAnual);
+  cerca(r.nomina.irpf, 30000 / 14 * 0.15);
+  cerca(r.pagaExtra.cotizacion, 0);
+  cerca(r.nomina.neto * 12 + r.pagaExtra.neto * 2, r.netoAnual + r.irpf.resultadoDeclaracion);
 
   const doce = C.calcularDesdeBruto(30000, { pagas: 12 });
   assert.equal(doce.pagaExtra, null);
-  cerca(doce.nomina.neto, doce.netoAnual / 12);
+  cerca(doce.nomina.neto * 12, doce.netoAnual + doce.irpf.resultadoDeclaracion);
   cerca(doce.netoAnual, r.netoAnual);
 });
 
-test('de bruto a neto y vuelta', () => {
-  for (const bruto of [9000, 15000, 19500, 23000, 30000, 45000, 61214.4, 80000, 150000, 400000]) {
+test('de neto a bruto: alcanza el neto pedido con el bruto más bajo posible', () => {
+  for (const bruto of [9000, 15000, 19500, 20000, 21000, 23000, 30000, 45000, 61214.4, 80000, 150000, 400000]) {
     for (const pagas of [12, 14]) {
-      const directo = C.calcular({ modo: 'bruto', periodo: 'anual', importe: bruto, pagas });
-      const anual = C.calcular({ modo: 'neto', periodo: 'anual', importe: directo.netoAnual, pagas });
-      cerca(anual.brutoAnual, bruto);
-      const mensual = C.calcular({ modo: 'neto', periodo: 'mensual', importe: directo.nomina.neto, pagas });
-      cerca(mensual.brutoAnual, bruto);
+      for (const hijos of [0, 2]) {
+        const opciones = { pagas, hijos };
+        const directo = C.calcularDesdeBruto(bruto, opciones);
+
+        const anual = C.calcular(Object.assign({ modo: 'neto', periodo: 'anual', importe: directo.netoAnual }, opciones));
+        cerca(anual.netoAnual, directo.netoAnual);
+        assert.ok(anual.brutoAnual <= bruto + 0.01);
+
+        // El neto de la nómina baja un poco al saltar de tramo de retención, así que a veces
+        // un bruto algo menor da el mismo neto.
+        const mensual = C.calcular(Object.assign({ modo: 'neto', periodo: 'mensual', importe: directo.nomina.neto }, opciones));
+        cerca(mensual.nomina.neto, directo.nomina.neto);
+        assert.ok(mensual.brutoAnual <= bruto + 0.01);
+      }
     }
   }
+  // Justo al entrar en el tramo del 15 %, un bruto algo menor ya da ese neto de nómina.
+  const objetivo = C.netoMensual(29790.01, {});
+  assert.ok(C.calcular({ modo: 'neto', periodo: 'mensual', importe: objetivo }).brutoAnual < 29790);
+  // Sin saltos de por medio, la vuelta da el mismo bruto.
+  cerca(C.calcular({ modo: 'neto', periodo: 'anual', importe: C.netoAnual(45000, {}) }).brutoAnual, 45000);
 });
 
 test('coste de empresa a bruto y vuelta', () => {

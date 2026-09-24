@@ -307,6 +307,7 @@
               <option value="indefinido" selected>Indefinido</option>
               <option value="temporal">Temporal</option>
             </select>
+            <p class="ayuda">Con contrato temporal se aplica el mínimo de retención del 2&nbsp;% de los contratos de menos de un año.</p>
           </div>
           <label class="etiqueta" for="atep">Accidentes de trabajo (AT/EP)</label>
           <div class="importe porcentaje">
@@ -334,7 +335,7 @@
             <tbody></tbody>
           </table>
         </div>
-        <p class="ayuda">El IRPF de cada nómina es la parte proporcional del IRPF del año. Tu empresa te retiene según la tabla de retenciones de Bizkaia, así que puede variar algo; la diferencia se ajusta en la declaración.</p>
+        <p class="ayuda" id="nota-nomina" aria-live="off"></p>
 
         <figure class="grafico" id="grafico">
           <figcaption>A dónde va lo que paga la empresa</figcaption>
@@ -372,8 +373,8 @@
       <ul>
         <li><strong>Cotizaciones a la Seguridad Social de 2026.</strong> Con contrato indefinido, el trabajador paga un 6,50&nbsp;% de su base de cotización (contingencias comunes 4,70&nbsp;%, desempleo 1,55&nbsp;%, formación profesional 0,10&nbsp;% y MEI 0,15&nbsp;%). La empresa paga un 30,65&nbsp;% más el tipo de accidentes de trabajo. La base tiene un tope de 5.101,20 € al mes; por encima se paga la cotización de solidaridad (del 1,15&nbsp;% al 1,46&nbsp;% del exceso).</li>
         <li><strong>IRPF foral de Bizkaia.</strong> Al bruto se le restan las cotizaciones y la bonificación por rendimientos del trabajo: 8.000 € si el rendimiento neto no pasa de 14.800 €, bajando hasta 3.000 € a partir de 23.000 €. A lo que queda se le aplica la tarifa foral, del 23&nbsp;% al 49&nbsp;%. A la cuota se le resta la minoración general de 1.615 € y, si tienes hijos, la deducción por descendientes (682 € por el primero, 844 € por el segundo, 1.421 € por el tercero… y 394 € más por cada menor de 6 años).</li>
-        <li><strong>Hasta 20.000 € brutos al año no estás obligado a declarar</strong> si solo tienes un pagador y no tienes otros ingresos. Si no declaras, tu IRPF es lo que te hayan retenido en nómina, que puede ser algo distinto del de la calculadora.</li>
-        <li><strong>Es el IRPF de todo el año, no la retención.</strong> La calculadora muestra el IRPF que te corresponde pagar. La retención de tu nómina sale de la tabla de retenciones de Bizkaia y puede ser algo distinta; la diferencia se ajusta en la declaración de la renta.</li>
+        <li><strong>Retención en la nómina.</strong> Se calcula con la tabla oficial de retenciones de Bizkaia de 2026 según tu bruto anual y tus hijos: 0&nbsp;% hasta 20.000 €, 7&nbsp;% sin hijos justo por encima y hasta un 40&nbsp;%. En los contratos de menos de un año, la retención no puede bajar del 2&nbsp;%.</li>
+        <li><strong>La declaración de la renta.</strong> La diferencia entre lo retenido y el IRPF que te corresponde en el año sale a pagar o a devolver. Con un solo pagador y hasta 20.000 € brutos no estás obligado a declarar: tu IRPF se queda en lo retenido, y si te retuvieron de más te conviene declarar para recuperarlo.</li>
         <li><strong>No se incluyen</strong> otros ingresos, aportaciones a EPSV o planes de pensiones, la tributación conjunta, la discapacidad ni deducciones como la de alquiler de vivienda.</li>
       </ul>
 
@@ -384,18 +385,20 @@
       <p>El bruto y el neto anual son los mismos. Con 14 pagas el bruto anual se divide entre 14 y cobras dos pagas extra. En ellas no se descuenta Seguridad Social, porque ya se cotiza por ellas cada mes, así que su neto es algo mayor que el de un mes normal.</p>
       <h3>¿Qué es el coste para la empresa?</h3>
       <p>Es el sueldo bruto más las cotizaciones que paga la empresa a la Seguridad Social: alrededor de un 31,65&nbsp;% del bruto con contrato indefinido y trabajo de oficina, hasta la base máxima.</p>
+      <h3>¿Por qué cobro menos neto justo por encima de 20.000 €?</h3>
+      <p>Porque hasta 20.000 € brutos la tabla de retenciones es del 0&nbsp;% y, con un solo pagador, no hay que declarar. A partir de 20.000,01 € la retención empieza en el 7&nbsp;% (sin hijos) y la declaración es obligatoria, así que pagas el IRPF de todo el sueldo. Con un bruto algo por encima de 20.000 € puedes cobrar menos neto al año que con 20.000 € justos.</p>
       <h3>¿Tengo que hacer la declaración de la renta?</h3>
       <p>Si solo cobras de una empresa y no pasas de 20.000 € brutos al año, no estás obligado. Aun así, te puede convenir hacerla si te han retenido más IRPF del que te corresponde, porque te devolverán la diferencia.</p>
     </section>
 
     <footer class="pie">
-      <p>Estimación orientativa con los parámetros de 2026: cotizaciones de la Orden PJC/297/2026 e IRPF de la Norma Foral 13/2013 de Bizkaia, con los cambios de las Normas Forales 2/2025 y 7/2025. No sustituye a tu nómina ni al cálculo de la Hacienda Foral de Bizkaia. Revisada en septiembre de 2026.</p>
+      <p>Estimación orientativa con los parámetros de 2026: cotizaciones de la Orden PJC/297/2026, IRPF de la Norma Foral 13/2013 de Bizkaia con los cambios de las Normas Forales 2/2025 y 7/2025, y tabla de retenciones del Decreto Foral 134/2025. No sustituye a tu nómina ni al cálculo de la Hacienda Foral de Bizkaia. Revisada en septiembre de 2026.</p>
       <p><a href="https://github.com/davsed/calculadora-bizkaia">Código fuente en GitHub</a></p>
     </footer>
   </div>
 
   <noscript><p style="text-align:center">La calculadora necesita JavaScript activado.</p></noscript>
-  <script src="calculadora.js?v=2026.1"></script>
-  <script src="app.js?v=2026.1"></script>
+  <script src="calculadora.js?v=2026.2"></script>
+  <script src="app.js?v=2026.2"></script>
 </body>
 </html>
