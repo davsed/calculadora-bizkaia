@@ -29,7 +29,7 @@ Están todos en `PARAMETROS`, al principio de `calculadora.js`:
 | Minoración de cuota | 1.615 € | NF 13/2013, art. 77 (NF 7/2025) |
 | Deducción por hijos | 682 / 844 / 1.421 / 1.680 / 2.195 € + 394 € por menor de 6 años | NF 13/2013, art. 79 (NF 7/2025) |
 
-Los límites intermedios de la tarifa (77.430 €, 107.240 € y 142.940 €) son los de 2024-2025 deflactados un 2 %; conviene contrastarlos con el texto de la NF 7/2025. La diferencia posible es de unos pocos euros al año.
+Comprobados en septiembre de 2026 con la [Orden PJC/297/2026 en el BOE](https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-7296) y con las comparativas oficiales de Hacienda de Bizkaia de los cambios del IRPF en [2026](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01877) y [2025](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01876). Los tests comprueban la tarifa con las cuotas acumuladas de la tabla oficial.
 
 ## Estructura
 

@@ -26,8 +26,14 @@ test('parseImporte entiende formatos españoles e ingleses', () => {
 
 test('tarifa general 2026', () => {
   assert.equal(C.cuotaTarifa(0), 0);
+  // Cuotas acumuladas de la tabla del art. 75 (NF 7/2025).
   cerca(C.cuotaTarifa(18080), 4158.4);
   cerca(C.cuotaTarifa(36160), 9220.8);
+  cerca(C.cuotaTarifa(54240), 15548.8);
+  cerca(C.cuotaTarifa(77450), 24832.8);
+  cerca(C.cuotaTarifa(107260), 38247.3);
+  cerca(C.cuotaTarifa(142960), 54669.3);
+  cerca(C.cuotaTarifa(208390), 85421.4);
   cerca(C.cuotaTarifa(25050), 6110);
   // Por encima del último límite se aplica el 49 %.
   cerca(C.cuotaTarifa(300000) - C.cuotaTarifa(299000), 490);

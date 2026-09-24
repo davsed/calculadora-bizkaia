@@ -47,15 +47,14 @@
     // SMI 2026: 1.221 € x 14 pagas.
     smiAnual: 17094,
     irpf: {
-      // Tarifa general (art. 75). Los límites 4.º a 7.º son los de 2024-2025
-      // deflactados un 2 %; el primero, el segundo, el tercero y el último son los publicados.
+      // Tarifa general (art. 75, en la redacción de la NF 7/2025).
       escala: [
         { hasta: 18080, tipo: 0.23 },
         { hasta: 36160, tipo: 0.28 },
         { hasta: 54240, tipo: 0.35 },
-        { hasta: 77430, tipo: 0.40 },
-        { hasta: 107240, tipo: 0.45 },
-        { hasta: 142940, tipo: 0.46 },
+        { hasta: 77450, tipo: 0.40 },
+        { hasta: 107260, tipo: 0.45 },
+        { hasta: 142960, tipo: 0.46 },
         { hasta: 208390, tipo: 0.47 },
         { hasta: Infinity, tipo: 0.49 }
       ],
