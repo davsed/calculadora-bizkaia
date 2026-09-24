@@ -225,3 +225,100 @@ test('importe vacío o cero no rompe nada', () => {
     assert.deepEqual(r.avisos, []);
   }
 });
+
+test('socio: tramos del RETA y base mínima de los societarios', () => {
+  assert.equal(C.tramoReta(404.17).nombre, 'Tabla reducida, tramo 1');
+  assert.equal(C.tramoReta(1166.69).nombre, 'Tabla reducida, tramo 3');
+  assert.equal(C.tramoReta(1166.70).nombre, 'Tramo 1');
+  assert.equal(C.tramoReta(4041.67).nombre, 'Tramo 10');
+  assert.equal(C.tramoReta(8083.33).nombre, 'Tramo 12');
+
+  // 30.000 €: rendimientos de 2.425 €/mes (tramo 7), pero un societario no baja de 1.424,40 €.
+  const bajo = C.cotizacionReta(30000, {});
+  assert.equal(bajo.base, 1424.40);
+  cerca(bajo.cuotaAnual, 1424.40 * 0.315 * 12);
+
+  // 50.000 €: 4.041,67 €/mes, tramo 10, base mínima 1.601,31 €.
+  const medio = C.cotizacionReta(50000, {});
+  cerca(medio.rendimientoMensual, 50000 * 0.97 / 12);
+  assert.equal(medio.base, 1601.31);
+  cerca(medio.cuotaAnual, 6052.95);
+
+  // La base elegida se ajusta a los límites del tramo.
+  assert.equal(C.cotizacionReta(50000, { baseReta: 3000 }).base, 3000);
+  assert.equal(C.cotizacionReta(50000, { baseReta: 9000 }).base, 4050);
+  assert.equal(C.cotizacionReta(50000, { baseReta: 100 }).base, 1601.31);
+
+  // Si la sociedad no paga nada no hay alta, ni base ni cuota.
+  const cero = C.cotizacionReta(0, {});
+  assert.equal(cero.base, 0);
+  assert.equal(cero.cuotaAnual, 0);
+});
+
+test('socio: IRPF y neto con 50.000 € de coste para la sociedad', () => {
+  const r = C.calcularSocioDesdeCoste(50000, { pagas: 12 });
+  cerca(r.brutoAnual, 50000 - 6052.95);
+  cerca(r.irpf.rendimientoNeto, 50000 - 6052.95);
+  cerca(r.irpf.aPagar, (50000 - 6052.95 - 3000 - 36160) * 0.35 + 9220.8 - 1615);
+  assert.equal(r.irpf.tipoRetencion, 0.20);
+  cerca(r.netoAnual, 34665.78);
+  cerca(r.comparacionAsalariado.netoAnual, C.calcular({ modo: 'coste', periodo: 'anual', importe: 50000, pagas: 12 }).netoAnual);
+
+  // Si la cuota la paga el socio, cambia la nómina pero no lo que le queda.
+  const pagaSocio = C.calcularSocioDesdeCoste(50000, { pagas: 12, cuotaPagaSociedad: false });
+  assert.equal(pagaSocio.brutoAnual, 50000);
+  cerca(pagaSocio.netoAnual, r.netoAnual);
+  cerca(pagaSocio.nomina.disponible, r.nomina.disponible);
+  cerca(pagaSocio.nomina.cuotaSocio, 6052.95 / 12);
+});
+
+test('socio: las nóminas, la cuota y la declaración dan el neto del año', () => {
+  for (const cuotaPagaSociedad of [true, false]) {
+    const r = C.calcularSocioDesdeCoste(40000, { pagas: 14, cuotaPagaSociedad });
+    const efectivo = r.nomina.disponible * 12 + r.pagaExtra.disponible * 2;
+    cerca(efectivo - r.irpf.resultadoDeclaracion, r.netoAnual);
+  }
+});
+
+test('socio: de bruto o neto a coste, con el importe más bajo posible', () => {
+  for (const coste of [15000, 25000, 33000, 50000, 72000, 120000]) {
+    for (const cuotaPagaSociedad of [true, false]) {
+      const opciones = { tipo: 'socio', pagas: 12, cuotaPagaSociedad };
+      const directo = C.calcularSocioDesdeCoste(coste, opciones);
+
+      const desdeBruto = C.calcular(Object.assign({ modo: 'bruto', periodo: 'anual', importe: directo.brutoAnual }, opciones));
+      cerca(desdeBruto.brutoAnual, directo.brutoAnual);
+      assert.ok(desdeBruto.costeAnual <= coste + 0.01);
+
+      const desdeNeto = C.calcular(Object.assign({ modo: 'neto', periodo: 'anual', importe: directo.netoAnual }, opciones));
+      cerca(desdeNeto.netoAnual, directo.netoAnual);
+      assert.ok(desdeNeto.costeAnual <= coste + 0.01);
+
+      const desdeNetoMes = C.calcular(Object.assign({ modo: 'neto', periodo: 'mensual', importe: directo.nomina.disponible }, opciones));
+      cerca(desdeNetoMes.nomina.disponible, directo.nomina.disponible);
+      assert.ok(desdeNetoMes.costeAnual <= coste + 0.01);
+    }
+  }
+});
+
+test('socio: avisa si la cuota mínima se come lo que paga la sociedad', () => {
+  const r = C.calcularSocioDesdeCoste(5000, {});
+  assert.ok(r.netoAnual < 0);
+  assert.ok(r.avisos.some((a) => a.codigo === 'cuota-supera'));
+  assert.deepEqual(C.calcular({ tipo: 'socio', modo: 'coste', periodo: 'anual', importe: 0 }).avisos, []);
+});
+
+test('socio: avisa si por pasar de tramo del RETA le llega menos neto', () => {
+  // El tramo 10 llega a 4.050 € al mes de rendimientos: 50.103 € al año de coste.
+  const encima = C.calcularSocioDesdeCoste(50110, {});
+  assert.equal(encima.reta.tramo.nombre, 'Tramo 11');
+  const escalon = encima.avisos.find((a) => a.codigo === 'escalon-tramo');
+  assert.ok(escalon);
+  assert.equal(escalon.limite, 50103);
+  cerca(escalon.perdida, C.netoAnualSocio(50103, {}) - encima.netoAnual);
+  assert.ok(escalon.perdida > 300 && escalon.perdida < 330, String(escalon.perdida));
+  assert.ok(!C.calcularSocioDesdeCoste(50000, {}).avisos.some((a) => a.codigo === 'escalon-tramo'));
+  assert.ok(!C.calcularSocioDesdeCoste(60000, {}).avisos.some((a) => a.codigo === 'escalon-tramo'));
+  // Con una base elegida que vale en los dos tramos, la cuota no cambia y no hay salto.
+  assert.ok(!C.calcularSocioDesdeCoste(50110, { baseReta: 3000 }).avisos.some((a) => a.codigo === 'escalon-tramo'));
+});
