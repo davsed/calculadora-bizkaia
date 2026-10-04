@@ -10,6 +10,8 @@
   const campoImporte = $('importe');
   const campoAtEp = $('atep');
   const campoBaseReta = $('base-reta');
+  const deslizadorReta = $('porcentaje-reta');
+  const campoPorcentajeReta = $('porcentaje-reta-texto');
   const selectHijos = $('hijos');
   const selectMenores6 = $('menores6');
 
@@ -23,6 +25,10 @@
   const porcentaje = { format: function (x) { return formatoPorcentaje.format(x || 0).replace('-', '−'); } };
   const porcentajeEntero = new Intl.NumberFormat('es-ES', { style: 'percent', maximumFractionDigits: 0 });
   const tipo = new Intl.NumberFormat('es-ES', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Para escribir dentro de las casillas: "4.050,00" y "37,5".
+  const cifraConCentimos = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' });
+  const cifraHastaCentimos = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2, useGrouping: 'always' });
+  const cifraPorcentaje = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
 
   // Evita "-0,00 €" y permite forzar el signo en los desgloses.
   function dinero(x, conSigno) {
@@ -73,9 +79,18 @@
     return marcado ? marcado.value : null;
   }
 
+  // La base del RETA se elige en euros o en porcentaje, entre la mínima (0 %) y la máxima
+  // (100 %) del tramo. Manda lo último que se ha tocado; el otro se rellena con el resultado.
+  let basePorPorcentaje = false;
+
+  function leerPorcentajeReta() {
+    const valor = C.parseImporte(campoPorcentajeReta.value.trim().replace('%', ''));
+    return Number.isFinite(valor) ? Math.min(valor, 100) / 100 : null;
+  }
+
   function leerEntrada() {
     const texto = campoImporte.value.trim();
-    const base = campoBaseReta.value.trim();
+    const base = basePorPorcentaje ? '' : campoBaseReta.value.trim();
     return {
       tipo: valorRadio('tipo'),
       modo: valorRadio('modo'),
@@ -90,7 +105,8 @@
       atEp: C.parseImporte(campoAtEp.value) / 100,
       cuotaPagaSociedad: valorRadio('pagaCuota') !== 'socio',
       textoBaseReta: base,
-      baseReta: base === '' ? null : C.parseImporte(base)
+      baseReta: base === '' ? null : C.parseImporte(base),
+      porcentajeBaseReta: basePorPorcentaje ? leerPorcentajeReta() : null
     };
   }
 
@@ -127,14 +143,15 @@
 
   function textoBaseReta(e, r, baseValida) {
     const reta = r.reta;
-    if (!baseValida) return 'Escribe una base válida o déjalo vacío.';
-    if (!(r.costeAnual > 0)) return 'Déjalo vacío para usar la mínima, que es lo habitual.';
+    if (!baseValida) return basePorPorcentaje ? 'Escribe un porcentaje entre 0 y 100.' : 'Escribe una base válida o déjalo vacío.';
+    if (!(r.costeAnual > 0)) return 'Déjalo en 0 % para usar la mínima, que es lo habitual.';
     if (reta.baseMinima === reta.baseMaxima) {
       return 'Con este importe solo puede cotizar por ' + dinero(reta.base) + ' al mes, la mínima de un socio.';
     }
-    let texto = (e.baseReta === null ? 'Déjalo vacío para usar la mínima, que es lo habitual. ' : '') +
-      'Con este importe puede ir de ' + dinero(reta.baseMinima) + ' a ' + dinero(reta.baseMaxima) + ' al mes';
-    if (e.baseReta !== null && Math.abs(e.baseReta - reta.base) >= 0.005) texto += ', así que se usa ' + dinero(reta.base);
+    const elegida = e.baseReta !== null || e.porcentajeBaseReta !== null;
+    let texto = (elegida ? '' : 'Déjalo en 0 % para usar la mínima, que es lo habitual. ') +
+      'Con este importe puede ir de ' + dinero(reta.baseMinima) + ' (0 %) a ' + dinero(reta.baseMaxima) + ' (100 %) al mes';
+    if (e.porcentajeBaseReta !== null) texto += '; con un ' + cifraPorcentaje.format(e.porcentajeBaseReta * 100) + ' % cotiza por ' + dinero(reta.base);
     return texto + '.';
   }
 
@@ -235,7 +252,8 @@
     const reta = r.reta;
     const tipoTotal = Object.keys(P.reta.tipos).reduce(function (s, k) { return s + P.reta.tipos[k]; }, 0);
     let base;
-    if (r.opciones.baseReta !== null) base = 'la base elegida';
+    if (r.opciones.porcentajeBaseReta !== null && reta.base > reta.baseMinima) base = 'el ' + cifraPorcentaje.format(r.opciones.porcentajeBaseReta * 100) + ' % entre la mínima y la máxima de su tramo';
+    else if (r.opciones.baseReta !== null && reta.base > reta.baseMinima) base = 'la base elegida';
     else if (reta.base === P.reta.baseMinimaSocietario) base = 'la base mínima de un socio de sociedad';
     else base = 'la base mínima de su tramo';
     return reta.tramo.nombre + ' del RETA: sus rendimientos son ' + dinero(reta.rendimientoMensual) +
@@ -595,12 +613,19 @@
     }
     if (e.tipo === 'socio') {
       if (!e.cuotaPagaSociedad) q.set('pagacuota', 'socio');
-      if (e.textoBaseReta) q.set('base', e.textoBaseReta);
+      if (e.porcentajeBaseReta !== null) q.set('basepct', cifraPorcentaje.format(e.porcentajeBaseReta * 100));
+      else if (e.textoBaseReta) q.set('base', e.textoBaseReta);
     } else {
       if (e.contrato === 'temporal') q.set('contrato', 'temporal');
       if (campoAtEp.value.trim() !== ATEP_POR_DEFECTO) q.set('atep', campoAtEp.value.trim());
     }
     try { history.replaceState(null, '', location.pathname + '?' + q.toString()); } catch { /* file:// */ }
+  }
+
+  // Los enlaces antiguos pueden traer "30000" o "2150.5": se muestran como "30.000" y "2.150,5".
+  function cifraDeUrl(texto) {
+    const valor = C.parseImporte(texto);
+    return Number.isFinite(valor) ? cifraHastaCentimos.format(valor) : texto;
   }
 
   function leerUrl() {
@@ -614,8 +639,12 @@
     marcar('periodo', q.get('periodo'));
     marcar('pagas', q.get('pagas'));
     marcar('pagaCuota', q.get('pagacuota'));
-    if (q.has('importe')) campoImporte.value = q.get('importe');
-    if (q.has('base')) campoBaseReta.value = q.get('base');
+    if (q.has('base')) campoBaseReta.value = cifraDeUrl(q.get('base'));
+    if (q.has('basepct')) {
+      campoPorcentajeReta.value = q.get('basepct');
+      basePorPorcentaje = true;
+    }
+    if (q.has('importe')) campoImporte.value = cifraDeUrl(q.get('importe'));
     if (/^[0-6]$/.test(q.get('hijos') || '')) selectHijos.value = q.get('hijos');
     actualizarOpcionesHijos();
     if (/^[0-6]$/.test(q.get('menores6') || '')) selectMenores6.value = String(Math.min(Number(q.get('menores6')), Number(selectHijos.value)));
@@ -630,7 +659,36 @@
   let temporizadorResumen = null;
   let temporizadorUrl = null;
 
-  function calcular() {
+  // Deja la casilla de euros y la de porcentaje de acuerdo con la base que se usa. Una base
+  // por encima de la máxima se corrige al momento; por debajo de la mínima, al salir de la
+  // casilla, para no estorbar mientras se escribe.
+  function sincronizarBaseReta(e, r, baseValida, evento) {
+    const reta = r.reta;
+    const hayCalculo = r.costeAnual > 0 && baseValida;
+    const rango = reta.baseMaxima - reta.baseMinima;
+    deslizadorReta.disabled = campoPorcentajeReta.disabled = hayCalculo && rango <= 0;
+    if (!hayCalculo) return;
+
+    if (basePorPorcentaje) {
+      campoBaseReta.value = cifraConCentimos.format(reta.base);
+      if (evento && evento.target === deslizadorReta) campoPorcentajeReta.value = deslizadorReta.value;
+      else deslizadorReta.value = String(e.porcentajeBaseReta * 100);
+      if (evento && evento.type === 'change' && evento.target === campoPorcentajeReta) {
+        campoPorcentajeReta.value = cifraPorcentaje.format(e.porcentajeBaseReta * 100);
+      }
+      return;
+    }
+
+    const escribiendo = evento && evento.type === 'input' && evento.target === campoBaseReta;
+    if (e.baseReta !== null && (e.baseReta > reta.baseMaxima + 0.005 || (!escribiendo && e.baseReta < reta.baseMinima - 0.005))) {
+      campoBaseReta.value = cifraConCentimos.format(reta.base);
+    }
+    const porcentajeActual = rango > 0 ? (reta.base - reta.baseMinima) / rango * 100 : 0;
+    deslizadorReta.value = String(porcentajeActual);
+    campoPorcentajeReta.value = cifraPorcentaje.format(porcentajeActual);
+  }
+
+  function calcular(evento) {
     const e = leerEntrada();
     const esSocio = e.tipo === 'socio';
     actualizarTipo(esSocio);
@@ -642,16 +700,23 @@
     ayuda.textContent = valido ? ayudaImporte(e) : 'Escribe un importe válido, por ejemplo 30.000 o 2.150,50.';
     campoImporte.setAttribute('aria-invalid', String(!valido));
 
-    const baseValida = e.baseReta === null || (Number.isFinite(e.baseReta) && e.baseReta > 0);
+    const baseValida = basePorPorcentaje
+      ? e.porcentajeBaseReta !== null
+      : e.baseReta === null || (Number.isFinite(e.baseReta) && e.baseReta > 0);
     const ayudaBase = $('ayuda-base-reta');
     ayudaBase.className = baseValida ? 'ayuda' : 'error';
-    campoBaseReta.setAttribute('aria-invalid', String(!baseValida));
+    campoBaseReta.setAttribute('aria-invalid', String(!baseValida && !basePorPorcentaje));
+    campoPorcentajeReta.setAttribute('aria-invalid', String(!baseValida && basePorPorcentaje));
 
     const r = C.calcular(Object.assign({}, e, {
       importe: valido ? e.importe : 0,
-      baseReta: baseValida ? e.baseReta : null
+      baseReta: baseValida ? e.baseReta : null,
+      porcentajeBaseReta: baseValida ? e.porcentajeBaseReta : null
     }));
-    if (esSocio) ayudaBase.textContent = textoBaseReta(e, r, baseValida);
+    if (esSocio) {
+      ayudaBase.textContent = textoBaseReta(e, r, baseValida);
+      sincronizarBaseReta(e, r, baseValida, evento);
+    }
 
     pintarResumen(r);
     pintarAvisos(r);
@@ -672,9 +737,47 @@
     }, 700);
   }
 
+  // Pone el punto de los miles mientras se escribe, sin mover el cursor de su sitio.
+  function agruparCampo(campo, evento) {
+    if (evento.inputType === 'insertFromPaste' || evento.inputType === 'insertFromDrop') {
+      const pegado = C.parseImporte(campo.value);
+      if (Number.isFinite(pegado)) {
+        campo.value = cifraHastaCentimos.format(pegado);
+        return;
+      }
+    }
+    const resultado = C.agruparMiles(campo.value, campo.selectionStart);
+    if (resultado.texto === campo.value) return;
+    campo.value = resultado.texto;
+    campo.setSelectionRange(resultado.cursor, resultado.cursor);
+  }
+
+  // Al borrar un punto de los miles se borra la cifra de al lado; si no, el punto volvería a salir.
+  function saltarPuntoAlBorrar(evento) {
+    const campo = evento.target;
+    if (campo.selectionStart !== campo.selectionEnd) return;
+    const posicion = campo.selectionStart;
+    if (evento.inputType === 'deleteContentBackward' && campo.value[posicion - 1] === '.') {
+      campo.setSelectionRange(posicion - 1, posicion - 1);
+    } else if (evento.inputType === 'deleteContentForward' && campo.value[posicion] === '.') {
+      campo.setSelectionRange(posicion + 1, posicion + 1);
+    }
+  }
+  [campoImporte, campoBaseReta].forEach(function (campo) {
+    campo.addEventListener('beforeinput', saltarPuntoAlBorrar);
+  });
+
   function alCambiar(evento) {
-    if (evento.target === selectHijos) actualizarOpcionesHijos();
-    calcular();
+    const objetivo = evento.target;
+    if (objetivo === selectHijos) actualizarOpcionesHijos();
+    if (evento.type === 'input' && (objetivo === campoImporte || objetivo === campoBaseReta)) agruparCampo(objetivo, evento);
+    if (objetivo === deslizadorReta || objetivo === campoPorcentajeReta) {
+      basePorPorcentaje = true;
+      if (objetivo === deslizadorReta) campoPorcentajeReta.value = deslizadorReta.value;
+    } else if (objetivo === campoBaseReta) {
+      basePorPorcentaje = false;
+    }
+    calcular(evento);
   }
   formulario.addEventListener('submit', function (evento) { evento.preventDefault(); });
   formulario.addEventListener('input', alCambiar);
