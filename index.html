@@ -148,6 +148,11 @@
     .importe.porcentaje input { font-size: 1rem; font-weight: 400; padding: 8px 32px 8px 10px; }
     .importe.porcentaje .sufijo { font-size: 1rem; right: 12px; }
     .importe.al-mes input { padding-right: 68px; }
+    .deslizador { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+    .deslizador .pista { flex: 1 1 auto; min-width: 0; }
+    .deslizador input[type="range"] { width: 100%; margin: 10px 0 2px; accent-color: var(--serie-1); }
+    .deslizador .extremos { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); }
+    .deslizador .importe { flex: none; width: 84px; }
     .ayuda { font-size: 0.85rem; color: var(--muted); margin: 6px 0 0; }
     .aviso-tipo { margin: -10px 0 16px; }
     .error { color: var(--ink); font-size: 0.85rem; margin: 6px 0 0; }
@@ -328,11 +333,21 @@
           </fieldset>
           <div class="campo">
             <label class="etiqueta" for="base-reta">Base de cotización del RETA</label>
+            <div class="deslizador">
+              <div class="pista">
+                <input id="porcentaje-reta" type="range" min="0" max="100" step="1" value="0" aria-label="Base de cotización, de la mínima (0 %) a la máxima (100 %) del tramo" aria-describedby="ayuda-base-reta">
+                <div class="extremos" aria-hidden="true"><span>Mínima</span><span>Máxima</span></div>
+              </div>
+              <div class="importe porcentaje">
+                <input class="campo-texto" id="porcentaje-reta-texto" type="text" inputmode="decimal" autocomplete="off" value="0" aria-label="Porcentaje entre la base mínima y la máxima del tramo">
+                <span class="sufijo" aria-hidden="true">%</span>
+              </div>
+            </div>
             <div class="importe porcentaje al-mes">
               <input class="campo-texto" id="base-reta" name="baseReta" type="text" inputmode="decimal" autocomplete="off" placeholder="La mínima" aria-describedby="ayuda-base-reta">
               <span class="sufijo" aria-hidden="true">€/mes</span>
             </div>
-            <p class="ayuda" id="ayuda-base-reta">Déjalo vacío para usar la mínima, que es lo habitual.</p>
+            <p class="ayuda" id="ayuda-base-reta">Déjalo en 0 % para usar la mínima, que es lo habitual.</p>
           </div>
         </div>
 

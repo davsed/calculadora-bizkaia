@@ -24,6 +24,25 @@ test('parseImporte entiende formatos españoles e ingleses', () => {
   assert.ok(Number.isNaN(C.parseImporte('1,2,3.4.5')));
 });
 
+test('agruparMiles pone el punto de los miles mientras se escribe', () => {
+  const t = (texto) => C.agruparMiles(texto).texto;
+  assert.equal(t('100'), '100');
+  assert.equal(t('1000'), '1.000');
+  assert.equal(t('30000'), '30.000');
+  assert.equal(t('1234567'), '1.234.567');
+  assert.equal(t('3.0000'), '30.000');
+  assert.equal(t('30.000,5'), '30.000,5');
+  assert.equal(t('2150,505'), '2.150,50');
+  assert.equal(t('1.000,'), '1.000,');
+  assert.equal(t('12a3 €'), '123');
+  assert.equal(t(''), '');
+  // El cursor se queda detrás de las mismas cifras.
+  assert.deepEqual(C.agruparMiles('1000', 4), { texto: '1.000', cursor: 5 });
+  assert.deepEqual(C.agruparMiles('12000', 2), { texto: '12.000', cursor: 2 });
+  assert.deepEqual(C.agruparMiles('1.0500', 3), { texto: '10.500', cursor: 2 });
+  assert.equal(C.parseImporte(t('2150,5')), 2150.5);
+});
+
 test('tarifa general 2026', () => {
   assert.equal(C.cuotaTarifa(0), 0);
   // Cuotas acumuladas de la tabla del art. 75 (NF 7/2025).
@@ -248,6 +267,15 @@ test('socio: tramos del RETA y base mínima de los societarios', () => {
   assert.equal(C.cotizacionReta(50000, { baseReta: 3000 }).base, 3000);
   assert.equal(C.cotizacionReta(50000, { baseReta: 9000 }).base, 4050);
   assert.equal(C.cotizacionReta(50000, { baseReta: 100 }).base, 1601.31);
+
+  // Con porcentaje: 0 % es la base mínima del tramo y 100 % la máxima, y manda sobre la base.
+  assert.equal(C.cotizacionReta(50000, { porcentajeBaseReta: 0 }).base, 1601.31);
+  assert.equal(C.cotizacionReta(50000, { porcentajeBaseReta: 1, baseReta: 2000 }).base, 4050);
+  assert.equal(C.cotizacionReta(50000, { porcentajeBaseReta: 0.5 }).base, Math.round((1601.31 + 4050) / 2 * 100) / 100);
+  assert.equal(C.cotizacionReta(50000, { porcentajeBaseReta: 7 }).base, 4050);
+  // El porcentaje se mantiene al cambiar de tramo: la base sigue al nuevo rango.
+  const alto = C.cotizacionReta(150000, { porcentajeBaseReta: 1 });
+  assert.equal(alto.base, alto.baseMaxima);
 
   // Si la sociedad no paga nada no hay alta, ni base ni cuota.
   const cero = C.cotizacionReta(0, {});

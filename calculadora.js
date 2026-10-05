@@ -158,7 +158,9 @@
     deduccionCompartida: true,
     // Solo para socios en el RETA.
     cuotaPagaSociedad: true,
-    baseReta: null
+    baseReta: null,
+    // De 0 (la base mínima del tramo) a 1 (la máxima). Si está, manda sobre baseReta.
+    porcentajeBaseReta: null
   };
 
   function normalizarOpciones(opciones) {
@@ -171,6 +173,7 @@
     o.deduccionCompartida = o.deduccionCompartida !== false;
     o.cuotaPagaSociedad = o.cuotaPagaSociedad !== false;
     o.baseReta = Number.isFinite(o.baseReta) && o.baseReta > 0 ? o.baseReta : null;
+    o.porcentajeBaseReta = Number.isFinite(o.porcentajeBaseReta) ? Math.min(Math.max(o.porcentajeBaseReta, 0), 1) : null;
     return o;
   }
 
@@ -377,7 +380,9 @@
     const tramo = tramoReta(rendimientoMensual);
     const baseMinima = Math.max(tramo.min, p.baseMinimaSocietario);
     const baseMaxima = Math.max(tramo.max, p.baseMinimaSocietario);
-    const base = o.baseReta === null ? baseMinima : Math.min(Math.max(o.baseReta, baseMinima), baseMaxima);
+    let base = baseMinima;
+    if (o.porcentajeBaseReta !== null) base = Math.round((baseMinima + o.porcentajeBaseReta * (baseMaxima - baseMinima)) * 100) / 100;
+    else if (o.baseReta !== null) base = Math.min(Math.max(o.baseReta, baseMinima), baseMaxima);
     // Sin actividad no hay alta ni cuota.
     const cotizada = costeAnual > 0 ? base : 0;
     const t = p.tipos;
@@ -605,6 +610,32 @@
     return parseFloat(s);
   }
 
+  /**
+   * Pone el punto de los miles mientras se escribe: "30000" pasa a "30.000". La coma es la
+   * de los decimales (como mucho dos) y los puntos que escribe el usuario se quitan, porque
+   * ya los pone esto. `cursor` es la posición del cursor en `texto`; devuelve dónde queda
+   * en el texto nuevo, detrás de las mismas cifras.
+   */
+  function agruparMiles(texto, cursor) {
+    texto = String(texto == null ? '' : texto);
+    if (cursor == null) cursor = texto.length;
+    const significativo = /[\d,]/;
+    let antes = 0;
+    for (let i = 0; i < Math.min(cursor, texto.length); i++) if (significativo.test(texto[i])) antes++;
+
+    const limpio = texto.replace(/[^\d,]/g, '');
+    const coma = limpio.indexOf(',');
+    const entero = coma === -1 ? limpio : limpio.slice(0, coma);
+    let resultado = entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    if (coma !== -1) resultado += ',' + limpio.slice(coma + 1).replace(/,/g, '').slice(0, 2);
+
+    let nuevoCursor = 0;
+    for (let vistos = 0; nuevoCursor < resultado.length && vistos < antes; nuevoCursor++) {
+      if (significativo.test(resultado[nuevoCursor])) vistos++;
+    }
+    return { texto: resultado, cursor: nuevoCursor };
+  }
+
   return {
     PARAMETROS: PARAMETROS,
     OPCIONES_POR_DEFECTO: OPCIONES_POR_DEFECTO,
@@ -622,6 +653,7 @@
     netoAnualSocio: netoAnualSocio,
     calcularSocioDesdeCoste: calcularSocioDesdeCoste,
     calcular: calcular,
-    parseImporte: parseImporte
+    parseImporte: parseImporte,
+    agruparMiles: agruparMiles
   };
 });
