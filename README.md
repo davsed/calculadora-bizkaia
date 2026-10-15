@@ -60,6 +60,8 @@ Están todos en `PARAMETROS`, al principio de `calculadora.js`:
 
 Comprobados en septiembre de 2026 con la [Orden PJC/297/2026 en el BOE](https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-7296), con las comparativas oficiales de Hacienda de Bizkaia de los cambios del IRPF en [2026](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01877) y [2025](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01876), con la [tabla de retenciones de 2026](https://www.bizkaia.eus/documents/26740887/26976067/tabla-de-retenciones-2026-01.pdf) y el [Reglamento del IRPF](https://www.bizkaia.eus/documents/880307/15187815/ca_47_2014.pdf), y con la [Ley General de la Seguridad Social](https://www.boe.es/buscar/act.php?id=BOE-A-2015-11724) para el RETA. Los tests comprueban la tarifa con las cuotas acumuladas de la tabla oficial.
 
+Los parámetros de los dividendos, en octubre de 2026: la tarifa del ahorro con la [comparativa de 2026](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01877) (art. 76 en la redacción de la NF 2/2025, con efectos desde el 1 de enero de 2026; los tests usan sus cuotas acumuladas), la exención de 1.500 € y que la minoración solo reduce la cuota general con el [texto consolidado de la Norma Foral 13/2013](https://www.bizkaia.eus/documents/880307/27501802/ca_13_2013.pdf/99c24b02-2b3e-821f-a6c5-5a62df447e32?t=1770098453680) (arts. 9.24 y 74), y la retención del 19 % sobre todo el dividendo, también la parte exenta, con el Reglamento (arts. 89 y 92.1).
+
 ## Estructura
 
 - `index.html` y `app.js`: la calculadora de sueldo (formulario, resumen del coste al neto, cascada, nómina, cálculo detallado y enlace para compartir), para el asalariado y para el socio autónomo.
