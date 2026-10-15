@@ -44,7 +44,7 @@ En la pestaña «Mejor reparto» (`reparto.html`), a partir de lo que la socieda
 
 - **Prueba todos los repartos** de 10 en 10 €, desde la nómina que justo paga la cuota mínima de autónomo hasta todo en nómina, y se queda con el que más le deja al socio, que es el que menos paga entre Impuesto sobre Sociedades, IRPF y cuota. A igualdad, más nómina. Ir euro a euro no basta por los saltos (tramos del RETA, los 20.000 € sin declarar, la bonificación del trabajo).
 - **La nómina** se calcula como la del socio de la pestaña «Sueldo» y **los dividendos**, como en la pestaña «Dividendos».
-- **Lo que cruza los dos**: con más de 1.600 € de dividendos hay que declarar, también la nómina; y con el 33 % del capital, o el 25 % siendo administrador, los dividendos íntegros suman a los rendimientos del RETA, menos el 3 %, y pueden subir la cuota (LGSS, art. 308.1.c, reglas 1.ª y 2.ª). Esto último se puede quitar.
+- **Lo que cruza los dos**: con más de 1.600 € de dividendos hay que declarar, también la nómina; y con el 33 % del capital, o el 25 % siendo administrador, los dividendos íntegros suman a los rendimientos del RETA, menos el 3 %, y pueden subir la cuota (LGSS, art. 308.1.c, reglas 1.ª y 2.ª). Es obligatorio, pero no para todos los socios del RETA (se puede estar en él por el control de la familia con menos de esa parte), así que la calculadora lo decide con su parte del capital y si es administrador. Hasta unos 34.100 € al año entre nómina y dividendos, la cuota de un socio se queda en la mínima.
 - **El resultado**: el mejor reparto frente a todo en nómina y a la nómina mínima, un gráfico de lo que le queda según lo que va a nómina, el desglose de impuestos y cuota, y lo que dejarían 100 € más por cada lado.
 - **Un aviso** de que la nómina debe corresponder al valor de mercado de su trabajo (NF 11/2013, art. 42) cuando los dividendos son más del 10 % de lo que gasta la sociedad.
 
@@ -67,7 +67,7 @@ Están todos en `PARAMETROS`, al principio de `calculadora.js`:
 | Tabla de retenciones | 0 % hasta 20.000 € … 40 % desde 236.060 €, según hijos; mínimo 2 % en contratos de menos de un año | Reglamento del IRPF (DF 47/2014), art. 88 (DF 134/2025) |
 | Cuota de autónomo (RETA) | 28,30 % + 1,30 % + cese 0,90 % + FP 0,10 % + MEI 0,90 % = 31,50 % | Orden PJC/297/2026, arts. 18 y 37 |
 | Tramos del RETA | 15 tramos de rendimientos mensuales, de 653,59 € a 5.101,20 € de base | Orden PJC/297/2026, art. 18 |
-| Rendimientos de un socio para el RETA | Todo lo que cobra de la sociedad menos un 3 %; base mínima de 1.424,40 € | LGSS, art. 308.1.a) regla 4.ª y 308.1.c) reglas 1.ª y 2.ª |
+| Rendimientos de un socio para el RETA | Todo lo que cobra de la sociedad menos un 3 %, también los dividendos con el 33 % del capital o el 25 % siendo administrador; base mínima de 1.424,40 € | LGSS, art. 308.1.a) regla 4.ª y 308.1.c) reglas 1.ª y 2.ª |
 | Tarifa del ahorro | 19 % hasta 7.500 € … 28 % desde 300.000 € | NF 13/2013, art. 76 (NF 2/2025) |
 | Exención de dividendos | 1.500 € al año | NF 13/2013, art. 9 |
 | Retención sobre dividendos | 19 % | Reglamento del IRPF (DF 47/2014), arts. 89 y 92 |

@@ -10,7 +10,9 @@
   const formulario = $('formulario');
   const campoImporte = $('importe');
   const campoTipoIS = $('tipo-is');
-  const casillaReta = $('dividendos-reta');
+  const campoCapital = $('capital');
+  const casillaAdministrador = $('administrador');
+  const CAPITAL_POR_DEFECTO = '100';
   const selectHijos = $('hijos');
   const selectMenores6 = $('menores6');
   const TIPO_IS_POR_DEFECTO = '20';
@@ -23,12 +25,16 @@
     const texto = campoImporte.value.trim();
     const textoTipo = campoTipoIS.value.trim().replace('%', '');
     const tipo = C.parseImporte(textoTipo);
+    const textoCapital = campoCapital.value.trim().replace('%', '');
+    const capital = C.parseImporte(textoCapital);
     return {
       textoImporte: texto,
       importe: texto === '' ? 0 : C.parseImporte(texto),
       textoTipoIS: textoTipo,
       tipoIS: Number.isFinite(tipo) && tipo < 100 ? tipo / 100 : NaN,
-      dividendosEnReta: casillaReta.checked,
+      textoCapital: textoCapital,
+      participacion: Number.isFinite(capital) && capital <= 100 ? capital / 100 : NaN,
+      administrador: casillaAdministrador.checked,
       hijos: Number(selectHijos.value),
       menores6: Number(selectMenores6.value),
       deduccionCompartida: $('compartida').checked
@@ -48,7 +54,8 @@
 
   function resumenOpciones(e, r) {
     const hijos = e.hijos === 0 ? 'sin hijos' : e.hijos === 1 ? '1 hijo' : (e.hijos === 6 ? '6 o más' : e.hijos) + ' hijos';
-    return [r.dividendosEnReta ? 'dividendos en la cuota' : 'dividendos fuera de la cuota', hijos, 'IS al ' + tipoCorto.format(r.tipoIS)].join(' · ');
+    const capital = Number.isFinite(e.participacion) ? tipoCorto.format(e.participacion) + ' del capital' + (e.administrador ? ', administrador' : '') : null;
+    return [capital, hijos, 'IS al ' + tipoCorto.format(r.tipoIS)].filter(Boolean).join(' · ');
   }
 
   // === Resumen: nómina + dividendos → lo que le queda ===
@@ -300,7 +307,8 @@
   function escribirUrl(e) {
     const q = new URLSearchParams();
     q.set('importe', e.textoImporte);
-    if (!e.dividendosEnReta) q.set('reta', 'no');
+    if (e.textoCapital !== CAPITAL_POR_DEFECTO) q.set('capital', e.textoCapital);
+    if (!e.administrador) q.set('admin', 'no');
     if (e.hijos > 0) {
       q.set('hijos', String(e.hijos));
       if (e.menores6 > 0) q.set('menores6', String(e.menores6));
@@ -313,7 +321,8 @@
   function leerUrl() {
     const q = new URLSearchParams(location.search);
     if (q.has('importe')) campoImporte.value = I.cifraDeUrl(q.get('importe'));
-    if (q.get('reta') === 'no') casillaReta.checked = false;
+    if (q.has('capital')) campoCapital.value = q.get('capital');
+    if (q.get('admin') === 'no') casillaAdministrador.checked = false;
     if (/^[0-6]$/.test(q.get('hijos') || '')) selectHijos.value = q.get('hijos');
     actualizarOpcionesHijos();
     if (/^[0-6]$/.test(q.get('menores6') || '')) selectMenores6.value = String(Math.min(Number(q.get('menores6')), Number(selectHijos.value)));
@@ -341,7 +350,22 @@
     ayudaTipo.textContent = tipoValido ? AYUDA_TIPO_IS : 'Escribe un porcentaje entre 0 y 99, por ejemplo 20 o 17,5.';
     campoTipoIS.setAttribute('aria-invalid', String(!tipoValido));
 
-    const r = C.calcularReparto(Object.assign({}, e, { importe: valido ? e.importe : 0, tipoIS: tipoValido ? e.tipoIS : undefined }));
+    const capitalValido = Number.isFinite(e.participacion);
+    campoCapital.setAttribute('aria-invalid', String(!capitalValido));
+
+    const r = C.calcularReparto(Object.assign({}, e, {
+      importe: valido ? e.importe : 0,
+      tipoIS: tipoValido ? e.tipoIS : undefined,
+      participacion: capitalValido ? e.participacion : undefined
+    }));
+    const ayudaCapital = $('ayuda-capital');
+    ayudaCapital.className = capitalValido ? 'ayuda' : 'error';
+    ayudaCapital.textContent = !capitalValido
+      ? 'Escribe un porcentaje entre 0 y 100. Mientras, sus dividendos cuentan para la cuota.'
+      : r.dividendosEnReta
+        ? 'Sus dividendos cuentan para su cuota de autónomo: tiene ' +
+          (e.participacion >= C.PARAMETROS.reta.participacionDividendos - 1e-9 ? 'un 33 % o más del capital.' : 'un 25 % o más y es administrador.')
+        : 'Sus dividendos no cuentan para su cuota de autónomo: haría falta el 33 % del capital, o el 25 % siendo administrador.';
     $('resumen-opciones').textContent = resumenOpciones(e, r);
     pintarResultadoRapido(r, valido);
     pintarResumen(r);

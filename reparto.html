@@ -27,7 +27,7 @@
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
   }
   </script>
-  <link rel="stylesheet" href="estilos.css?v=2026.11">
+  <link rel="stylesheet" href="estilos.css?v=2026.12">
 </head>
 <body>
   <div class="contenedor">
@@ -62,8 +62,13 @@
         <details class="plegable-movil opciones-extra" id="mas-opciones">
           <summary>Más opciones <span class="resumen-opciones" id="resumen-opciones"></span></summary>
           <div class="campo">
-            <label class="casilla" style="margin-top: 0"><input type="checkbox" id="dividendos-reta" name="dividendosReta" checked><span>Los dividendos cuentan para su cuota de autónomo</span></label>
-            <p class="ayuda">Si tiene al menos el 33&nbsp;% del capital, o el 25&nbsp;% siendo administrador.</p>
+            <label class="etiqueta" for="capital">Su parte del capital de la sociedad</label>
+            <div class="importe porcentaje">
+              <input class="campo-texto" id="capital" name="capital" type="text" inputmode="decimal" autocomplete="off" value="100" aria-describedby="ayuda-capital">
+              <span class="sufijo" aria-hidden="true">%</span>
+            </div>
+            <label class="casilla"><input type="checkbox" id="administrador" name="administrador" checked aria-describedby="ayuda-capital"><span>Es administrador de la sociedad</span></label>
+            <p class="ayuda" id="ayuda-capital"></p>
           </div>
           <div class="campo">
             <label class="etiqueta" for="hijos">Hijos que conviven con el socio</label>
@@ -142,7 +147,7 @@
           <li><strong>Qué se compara.</strong> Lo que la sociedad puede gastar en el socio se reparte entre nómina y dividendos. La nómina es gasto de la sociedad; los dividendos salen del beneficio después del Impuesto sobre Sociedades. Para cada reparto se calcula lo que le queda al socio en el año y se elige el que más le deja, que es el que menos paga entre Impuesto sobre Sociedades, IRPF y cuota de autónomo.</li>
           <li><strong>La nómina</strong> se calcula como en la pestaña «Sueldo» para un socio: su sueldo bruto lleva la cuota de autónomo dentro, la cuota va por la base mínima de su tramo y el IRPF es el del trabajo, con la cuota como gasto.</li>
           <li><strong>Los dividendos</strong>, como en la pestaña «Dividendos»: Impuesto sobre Sociedades, exención de 1.500 € y tarifa del ahorro.</li>
-          <li><strong>Lo que cruza los dos.</strong> Con más de 1.600 € de dividendos hay que hacer la declaración, así que la nómina de hasta 20.000 € también paga su IRPF. Y si el socio tiene al menos el 33&nbsp;% del capital, o el 25&nbsp;% siendo administrador, los dividendos íntegros suman a sus rendimientos para la cuota de autónomo, menos un 3&nbsp;% (Ley General de la Seguridad Social, art. 308.1.c): pueden subirle de tramo.</li>
+          <li><strong>Lo que cruza los dos.</strong> Con más de 1.600 € de dividendos hay que hacer la declaración, así que la nómina de hasta 20.000 € también paga su IRPF. Y si el socio tiene al menos el 33&nbsp;% del capital, o el 25&nbsp;% siendo administrador, los dividendos íntegros suman a sus rendimientos para la cuota de autónomo, menos un 3&nbsp;% (Ley General de la Seguridad Social, art. 308.1.c), y pueden subirle de tramo. Es obligatorio, pero no para todos los socios del RETA: se puede estar en él por el control de la familia con menos de esa parte. La calculadora lo decide con su parte del capital y si es administrador. Hasta que nómina y dividendos juntos pasan de unos 34.100 € al año, la cuota de un socio se queda en la mínima y los dividendos no la cambian.</li>
           <li><strong>Cómo se busca.</strong> Se prueban todos los repartos de 10 en 10 €, desde la nómina que justo paga la cuota de autónomo hasta todo en nómina. Ir euro a euro no basta, porque hay saltos (los tramos del RETA, los 20.000 € sin declarar, la bonificación del trabajo que se pierde entre 14.800 y 23.000 €). A igualdad, se queda con más nómina.</li>
           <li><strong>Sin sueldo mínimo legal, pero con límites.</strong> Un socio con control está en el RETA y no le aplica el salario mínimo. Pero sociedad y socio son personas vinculadas y su trabajo se valora a precio de mercado (Norma Foral 11/2013, art. 42): un sueldo muy por debajo de lo que vale lo puede discutir Hacienda. Los dividendos salen del beneficio del año, y en una SL antes hay que dotar la reserva legal. Con la base mínima del RETA, la jubilación y las bajas también son las mínimas.</li>
           <li><strong>No se incluyen</strong> una base del RETA distinta de la mínima, otras rentas del socio, las sociedades patrimoniales ni el momento de cobro: la nómina se cobra cada mes y los dividendos cuando la junta aprueba las cuentas.</li>
@@ -161,8 +166,8 @@
     // En pantalla ancha, lo que en el móvil va plegado se ve abierto desde el principio.
     if (matchMedia('(min-width: 860px)').matches) document.querySelectorAll('.plegable-movil').forEach(function (d) { d.open = true; });
   </script>
-  <script src="calculadora.js?v=2026.11"></script>
-  <script src="comun.js?v=2026.11"></script>
-  <script src="reparto.js?v=2026.11"></script>
+  <script src="calculadora.js?v=2026.12"></script>
+  <script src="comun.js?v=2026.12"></script>
+  <script src="reparto.js?v=2026.12"></script>
 </body>
 </html>
