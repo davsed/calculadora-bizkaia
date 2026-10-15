@@ -48,8 +48,29 @@
     return Number.isFinite(valor) ? cifraHastaCentimos.format(valor) : texto;
   }
 
+  // === Datos en el enlace y en el navegador ===
+  // Cada página escribe sus datos en la dirección, para el enlace compartible, y los guarda en este
+  // navegador. Al volver a una pestaña sin datos en la dirección, recupera los últimos.
+
+  const clavePagina = 'calculadora-bizkaia:' + ((location.pathname.split('/').pop() || 'index.html').replace(/\.html$/, '') || 'index');
+
+  let temporizadorUrl = null;
+
+  // Se guarda al momento, para que no se pierda aunque se cambie de pestaña enseguida; la dirección
+  // espera a una pausa, porque algunos navegadores limitan los cambios seguidos.
   function escribirUrl(q) {
-    try { history.replaceState(null, '', location.pathname + '?' + q.toString()); } catch { /* file:// */ }
+    const texto = q.toString();
+    try { localStorage.setItem(clavePagina, texto); } catch { /* sin almacenamiento: navegación privada */ }
+    clearTimeout(temporizadorUrl);
+    temporizadorUrl = setTimeout(function () {
+      try { history.replaceState(null, '', location.pathname + '?' + texto); } catch { /* file:// */ }
+    }, 300);
+  }
+
+  // Los datos con los que arranca la página: los del enlace o, si no trae, los guardados.
+  function datosIniciales() {
+    if (location.search.length > 1) return new URLSearchParams(location.search);
+    try { return new URLSearchParams(localStorage.getItem(clavePagina) || ''); } catch { return new URLSearchParams(); }
   }
 
   // === Casillas de importe ===
@@ -156,6 +177,7 @@
     el: el,
     cifraDeUrl: cifraDeUrl,
     escribirUrl: escribirUrl,
+    datosIniciales: datosIniciales,
     prepararCampoImporte: prepararCampoImporte,
     prepararFormulario: prepararFormulario,
     alternar: alternar,
