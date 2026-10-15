@@ -502,3 +502,18 @@ test('sueldo o dividendos: el mejor reparto', () => {
   assert.equal(poco.nominaMinima, null);
   assert.equal(poco.mejor.nomina, 3000);
 });
+
+test('sueldo o dividendos: los dividendos cuentan para la cuota según su parte del capital', () => {
+  assert.ok(C.dividendosCuentanReta(0.33, false));
+  assert.ok(C.dividendosCuentanReta(1, false));
+  assert.ok(!C.dividendosCuentanReta(0.30, false));
+  assert.ok(C.dividendosCuentanReta(0.25, true));
+  assert.ok(!C.dividendosCuentanReta(0.20, true));
+  // Con el 20 % (en el RETA por el control familiar), es como si no contaran.
+  const veinte = C.calcularReparto({ importe: 60000, participacion: 0.20, administrador: true });
+  const sinReta = C.calcularReparto({ importe: 60000, dividendosEnReta: false });
+  assert.equal(veinte.dividendosEnReta, false);
+  cerca(veinte.mejor.neto, sinReta.mejor.neto);
+  assert.equal(C.calcularReparto({ importe: 60000, participacion: 0.30, administrador: true }).dividendosEnReta, true);
+  assert.equal(C.calcularReparto({ importe: 60000, participacion: 0.30, administrador: false }).dividendosEnReta, false);
+});

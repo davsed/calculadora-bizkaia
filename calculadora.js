@@ -165,7 +165,11 @@
       // de la base mínima del grupo 7 del Régimen General y sus rendimientos se calculan con
       // una deducción por gastos genéricos del 3 % (art. 308.1).
       baseMinimaSocietario: 1424.40,
-      gastosGenericosSocietario: 0.03
+      gastosGenericosSocietario: 0.03,
+      // Sus dividendos de la sociedad cuentan para la cuota con esta parte del capital, o con la
+      // segunda si además es administrador (art. 308.1.c, regla 1.ª).
+      participacionDividendos: 0.33,
+      participacionDividendosAdministrador: 0.25
     },
     // Impuesto sobre Sociedades: Norma Foral 11/2013 de Bizkaia, arts. 13, 56 y 59.
     impuestoSociedades: {
@@ -622,6 +626,14 @@
 
   // === Sueldo o dividendos: el mejor reparto de lo que la sociedad gasta en el socio ===
 
+  // Si los dividendos del socio cuentan para su cuota de autónomo, según su parte del capital
+  // (de 0 a 1) y si es administrador.
+  function dividendosCuentanReta(participacion, administrador) {
+    const p = PARAMETROS.reta;
+    return participacion >= p.participacionDividendos - 1e-9 ||
+      (administrador === true && participacion >= p.participacionDividendosAdministrador - 1e-9);
+  }
+
   // Un reparto del presupuesto: `nomina` es lo que cuesta la nómina a la sociedad (su sueldo
   // bruto, con la cuota) y el resto es beneficio que, tras el Impuesto sobre Sociedades, se le
   // reparte como dividendo. `o` lleva las opciones del socio, `tipoIS` y `dividendosEnReta`.
@@ -661,7 +673,9 @@
    * la nómina que justo paga la cuota de autónomo hasta todo en nómina, y se queda con el que
    * más le deja: no basta con ir euro a euro, porque hay saltos (los tramos del RETA, los
    * 20.000 € sin declarar) que lo dejarían parado antes de tiempo. A igualdad, más nómina.
-   * entrada: { importe, tipoIS, dividendosEnReta, hijos, menores6, deduccionCompartida }
+   * entrada: { importe, tipoIS, participacion, administrador, hijos, menores6, deduccionCompartida }
+   * Con `participacion` (de 0 a 1) y `administrador` se decide si los dividendos cuentan para la
+   * cuota de autónomo; sin ellos, lo dice `dividendosEnReta` (por defecto, sí).
    */
   function calcularReparto(entrada) {
     const presupuesto = Math.max(0, Number(entrada.importe) || 0);
@@ -669,7 +683,9 @@
     o.tipoIS = Number.isFinite(entrada.tipoIS) && entrada.tipoIS >= 0 && entrada.tipoIS < 1
       ? entrada.tipoIS
       : PARAMETROS.impuestoSociedades.tipoPequenaEmpresa;
-    o.dividendosEnReta = entrada.dividendosEnReta !== false;
+    o.dividendosEnReta = Number.isFinite(entrada.participacion)
+      ? dividendosCuentanReta(entrada.participacion, entrada.administrador === true)
+      : entrada.dividendosEnReta !== false;
 
     // Hasta unos 20.000 repartos: de 10 en 10 € hasta 200.000 €, y a pasos mayores por encima.
     const paso = Math.max(10, Math.ceil(presupuesto / 20000 / 10) * 10);
@@ -881,6 +897,7 @@
     calcularSocioDesdeCoste: calcularSocioDesdeCoste,
     irpfDividendos: irpfDividendos,
     calcularDividendos: calcularDividendos,
+    dividendosCuentanReta: dividendosCuentanReta,
     calcularReparto: calcularReparto,
     calcular: calcular,
     parseImporte: parseImporte,
