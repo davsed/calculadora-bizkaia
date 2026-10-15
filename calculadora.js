@@ -1,9 +1,10 @@
 /*
  * Calculadora de sueldo neto, bruto y coste de empresa en Bizkaia (2026), para
- * personas asalariadas y para socios de su propia sociedad dados de alta en el RETA.
+ * personas asalariadas y para socios de su propia sociedad dados de alta en el RETA,
+ * y del IRPF de los dividendos que la sociedad reparte al socio.
  *
- * Lógica de cálculo pura, sin DOM: la usa index.html en el navegador y los
- * tests con Node (`node --test`). Todos los importes son anuales salvo que el
+ * Lógica de cálculo pura, sin DOM: la usan index.html y dividendos.html en el
+ * navegador y los tests con Node (`node --test`). Todos los importes son anuales salvo que el
  * nombre diga lo contrario.
  */
 (function (root, factory) {
@@ -15,8 +16,8 @@
 
   // === Parámetros 2026 ===
   // Seguridad Social: Orden PJC/297/2026 (régimen general).
-  // IRPF: Norma Foral 13/2013 de Bizkaia, con la bonificación del trabajo de la
-  // NF 2/2025 y la deflactación del 2 % de la NF 7/2025 (Presupuestos 2026).
+  // IRPF: Norma Foral 13/2013 de Bizkaia, con la bonificación del trabajo y la tarifa
+  // del ahorro de la NF 2/2025 y la deflactación del 2 % de la NF 7/2025 (Presupuestos 2026).
   // Retenciones: art. 88 del Reglamento del IRPF (DF 47/2014), según el DF 134/2025.
   // RETA: arts. 18 y 37 de la Orden PJC/297/2026 y art. 308 de la Ley General de la
   // Seguridad Social.
@@ -69,9 +70,27 @@
       // Deducción por descendientes (art. 79): 1.º, 2.º, 3.º, 4.º, 5.º y siguientes.
       deduccionDescendientes: [682, 844, 1421, 1680, 2195],
       deduccionMenor6: 394,
+      // Tarifa del ahorro (art. 76, en la redacción de la NF 2/2025, desde 2026).
+      escalaAhorro: [
+        { hasta: 7500, tipo: 0.19 },
+        { hasta: 15000, tipo: 0.20 },
+        { hasta: 30000, tipo: 0.22 },
+        { hasta: 50000, tipo: 0.24 },
+        { hasta: 90000, tipo: 0.255 },
+        { hasta: 120000, tipo: 0.26 },
+        { hasta: 240000, tipo: 0.265 },
+        { hasta: 300000, tipo: 0.27 },
+        { hasta: Infinity, tipo: 0.28 }
+      ],
+      // Dividendos exentos al año (art. 9).
+      exencionDividendos: 1500,
+      // Retención sobre los dividendos.
+      retencionDividendos: 0.19,
       // Con solo rendimientos del trabajo, de uno o varios pagadores, hasta este bruto anual
       // no hay obligación de declarar (NF 13/2013, art. 102.2): se paga lo retenido en nómina.
       umbralObligacionDeclarar: 20000,
+      // Tampoco la hay si además se cobran hasta 1.600 € entre rendimientos del capital y ganancias.
+      umbralCapitalSinDeclarar: 1600,
       // Tabla general de retenciones sobre el bruto anual. Cada fila: [hasta, % según el
       // número de descendientes: 0, 1, 2, 3, 4, 5 y más de 5].
       tablaRetenciones: [
@@ -239,15 +258,29 @@
     return Math.max(0, Math.min(importe, rendimientoNeto));
   }
 
-  function cuotaTarifa(baseLiquidable) {
-    let cuota = 0;
+  // Reparte una base entre los tramos de una escala: lo que cae en cada uno y su cuota.
+  function tramosEscala(base, escala) {
+    const tramos = [];
     let desde = 0;
-    for (const tramo of PARAMETROS.irpf.escala) {
-      if (baseLiquidable <= desde) break;
-      cuota += (Math.min(baseLiquidable, tramo.hasta) - desde) * tramo.tipo;
+    for (const tramo of escala) {
+      if (base <= desde) break;
+      const parte = Math.min(base, tramo.hasta) - desde;
+      tramos.push({ desde: desde, hasta: tramo.hasta, tipo: tramo.tipo, base: parte, cuota: parte * tramo.tipo });
       desde = tramo.hasta;
     }
-    return cuota;
+    return tramos;
+  }
+
+  function sumaCuotas(tramos) {
+    return tramos.reduce(function (total, tramo) { return total + tramo.cuota; }, 0);
+  }
+
+  function cuotaTarifa(baseLiquidable) {
+    return sumaCuotas(tramosEscala(baseLiquidable, PARAMETROS.irpf.escala));
+  }
+
+  function cuotaAhorro(baseLiquidable) {
+    return sumaCuotas(tramosEscala(baseLiquidable, PARAMETROS.irpf.escalaAhorro));
   }
 
   function deduccionHijos(opciones) {
@@ -493,6 +526,64 @@
     };
   }
 
+  // === Dividendos que reparte la sociedad al socio ===
+  // Van a la base del ahorro, que tiene su propia escala y tributa aparte del sueldo.
+
+  function irpfDividendos(brutoAnual) {
+    const p = PARAMETROS.irpf;
+    const bruto = Math.max(0, brutoAnual);
+    const exento = Math.min(bruto, p.exencionDividendos);
+    const baseAhorro = bruto - exento;
+    const tramos = tramosEscala(baseAhorro, p.escalaAhorro);
+    const cuota = sumaCuotas(tramos);
+    // La sociedad retiene sobre todo el dividendo, también sobre la parte exenta.
+    const retencion = bruto * p.retencionDividendos;
+    return {
+      exento: exento,
+      baseAhorro: baseAhorro,
+      tramos: tramos,
+      cuota: cuota,
+      retencion: retencion,
+      // Por encima de 1.600 € hay que declarar; por debajo la cuota es menor que lo retenido y
+      // compensa hacerlo, así que el IRPF del año es siempre la cuota.
+      obligadoADeclarar: Math.round(bruto * 100) / 100 > p.umbralCapitalSinDeclarar,
+      // Positivo: a pagar en la declaración. Negativo: a devolver.
+      resultadoDeclaracion: cuota - retencion
+    };
+  }
+
+  function calcularDividendosDesdeBruto(brutoAnual) {
+    const bruto = Math.max(0, brutoAnual);
+    const renta = irpfDividendos(bruto);
+    const neto = bruto - renta.cuota;
+    const ultimo = renta.tramos[renta.tramos.length - 1];
+    return {
+      tipo: 'dividendos',
+      brutoAnual: bruto,
+      // Lo que llega a la cuenta al repartir, con la retención ya descontada.
+      cobrado: bruto - renta.retencion,
+      netoAnual: neto,
+      irpf: renta,
+      tipoEfectivo: bruto > 0 ? renta.cuota / bruto : 0,
+      // Lo que se paga por el siguiente euro: nada mientras quede exención.
+      tipoMarginal: bruto < PARAMETROS.irpf.exencionDividendos ? 0 : ultimo ? ultimo.tipo : PARAMETROS.irpf.escalaAhorro[0].tipo,
+      netoPorCada100: 100 - (irpfDividendos(bruto + 100).cuota - renta.cuota)
+    };
+  }
+
+  /**
+   * Dividendos de un socio en el año, a partir del bruto que le corresponde en el reparto
+   * o del neto que quiere que le quede.
+   * entrada: { modo: 'bruto' | 'neto', importe }
+   */
+  function calcularDividendos(entrada) {
+    const importe = Math.max(0, Number(entrada.importe) || 0);
+    const bruto = entrada.modo === 'neto'
+      ? invertir(function (b) { return b - irpfDividendos(b).cuota; }, importe, [])
+      : importe;
+    return calcularDividendosDesdeBruto(bruto);
+  }
+
   // Donde el neto puede bajar de golpe: los tramos de retención y, para el socio, los del RETA.
   const CORTES_RETENCION = PARAMETROS.irpf.tablaRetenciones
     .map(function (fila) { return fila[0]; })
@@ -642,6 +733,8 @@
     cotizaciones: cotizaciones,
     bonificacionTrabajo: bonificacionTrabajo,
     cuotaTarifa: cuotaTarifa,
+    cuotaAhorro: cuotaAhorro,
+    tramosEscala: tramosEscala,
     deduccionHijos: deduccionHijos,
     tipoRetencion: tipoRetencion,
     irpf: irpf,
@@ -652,6 +745,8 @@
     cotizacionReta: cotizacionReta,
     netoAnualSocio: netoAnualSocio,
     calcularSocioDesdeCoste: calcularSocioDesdeCoste,
+    irpfDividendos: irpfDividendos,
+    calcularDividendos: calcularDividendos,
     calcular: calcular,
     parseImporte: parseImporte,
     agruparMiles: agruparMiles

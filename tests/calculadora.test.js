@@ -376,3 +376,60 @@ test('socio: avisa si por pasar de tramo del RETA le llega menos neto', () => {
   // Con una base elegida que vale en los dos tramos, la cuota no cambia y no hay salto.
   assert.ok(!C.calcularSocioDesdeCoste(50110, { baseReta: 3000 }).avisos.some((a) => a.codigo === 'escalon-tramo'));
 });
+
+test('tarifa del ahorro 2026', () => {
+  assert.equal(C.cuotaAhorro(0), 0);
+  // Cuotas acumuladas al final de cada tramo (art. 76, NF 2/2025).
+  cerca(C.cuotaAhorro(7500), 1425);
+  cerca(C.cuotaAhorro(15000), 2925);
+  cerca(C.cuotaAhorro(30000), 6225);
+  cerca(C.cuotaAhorro(50000), 11025);
+  cerca(C.cuotaAhorro(90000), 21225);
+  cerca(C.cuotaAhorro(120000), 29025);
+  cerca(C.cuotaAhorro(240000), 60825);
+  cerca(C.cuotaAhorro(300000), 77025);
+  cerca(C.cuotaAhorro(400000) - C.cuotaAhorro(399000), 280);
+  // Los tramos suman la base y la cuota.
+  const tramos = C.tramosEscala(20000, C.PARAMETROS.irpf.escalaAhorro);
+  assert.deepEqual(tramos.map((t) => t.base), [7500, 7500, 5000]);
+  cerca(tramos.reduce((s, t) => s + t.cuota, 0), C.cuotaAhorro(20000));
+});
+
+test('dividendos: exención, retención y declaración', () => {
+  // Hasta 1.500 € están exentos, pero la sociedad retiene igual: se recupera en la renta.
+  const pequeno = C.calcularDividendos({ modo: 'bruto', importe: 1500 });
+  assert.equal(pequeno.irpf.cuota, 0);
+  cerca(pequeno.irpf.retencion, 285);
+  cerca(pequeno.irpf.resultadoDeclaracion, -285);
+  assert.equal(pequeno.netoAnual, 1500);
+  assert.equal(pequeno.tipoMarginal, 0.19);
+  assert.ok(!pequeno.irpf.obligadoADeclarar);
+
+  const r = C.calcularDividendos({ modo: 'bruto', importe: 10000 });
+  assert.equal(r.irpf.exento, 1500);
+  assert.equal(r.irpf.baseAhorro, 8500);
+  cerca(r.irpf.cuota, 1425 + 1000 * 0.20);
+  cerca(r.cobrado, 8100);
+  cerca(r.irpf.resultadoDeclaracion, 1625 - 1900);
+  cerca(r.netoAnual, 8375);
+  assert.ok(r.irpf.obligadoADeclarar);
+  cerca(r.netoPorCada100, 80);
+
+  // Con más dividendo, la cuota pasa de lo retenido y sale a pagar.
+  const grande = C.calcularDividendos({ modo: 'bruto', importe: 60000 });
+  cerca(grande.irpf.cuota, 11025 + 8500 * 0.255);
+  cerca(grande.irpf.resultadoDeclaracion, 13192.5 - 11400);
+  assert.equal(grande.tipoMarginal, 0.255);
+
+  const nada = C.calcularDividendos({ modo: 'bruto', importe: 0 });
+  assert.equal(nada.netoAnual, 0);
+  assert.equal(nada.tipoEfectivo, 0);
+});
+
+test('dividendos: del neto que se quiere al bruto que hay que repartir', () => {
+  for (const bruto of [800, 1500, 10000, 60000, 350000]) {
+    const directo = C.calcularDividendos({ modo: 'bruto', importe: bruto });
+    const desdeNeto = C.calcularDividendos({ modo: 'neto', importe: directo.netoAnual });
+    cerca(desdeNeto.brutoAnual, bruto);
+  }
+});

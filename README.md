@@ -1,6 +1,6 @@
 # Calculadora de sueldo neto en Bizkaia
 
-Calculadora web para ver de un vistazo cuánto cuesta un puesto de trabajo a la empresa, cuánto de eso llega a la cuenta del trabajador y a dónde va el resto, en Bizkaia, con el IRPF foral y las cotizaciones a la Seguridad Social de 2026. Se puede partir del bruto, del neto o del coste para la empresa. Tiene también un modo para socios autónomos que cobran por nómina de su propia sociedad.
+Calculadora web para ver de un vistazo cuánto cuesta un puesto de trabajo a la empresa, cuánto de eso llega a la cuenta del trabajador y a dónde va el resto, en Bizkaia, con el IRPF foral y las cotizaciones a la Seguridad Social de 2026. Se puede partir del bruto, del neto o del coste para la empresa. Tiene también un modo para socios autónomos que cobran por nómina de su propia sociedad y, en otra pestaña, una calculadora del IRPF de los dividendos que la sociedad reparte al socio.
 
 https://davsed.github.io/calculadora-bizkaia/
 
@@ -25,6 +25,17 @@ Para el socio que controla su sociedad y está en el RETA (LGSS, art. 305.2.b), 
 
 No incluye los dividendos, que también cuentan para la cuota de autónomo, ni la tarifa plana. La cuota es la provisional: la Seguridad Social la regulariza al año siguiente con los rendimientos reales.
 
+### Dividendos del socio
+
+En la pestaña «Dividendos» (`dividendos.html`), a partir del dividendo bruto que le toca al socio en el año o de lo que quiere que le quede:
+
+- **El IRPF de la base del ahorro**: los dividendos están exentos hasta 1.500 € al año y el resto tributa con la tarifa del ahorro de 2026, del 19 % al 28 %, aparte del sueldo.
+- **La retención** del 19 % sobre todo el dividendo, también la parte exenta: lo que cobra en la cuenta al repartir.
+- **La declaración de la renta**: lo que sale a pagar o a devolver comparando lo retenido con el IRPF del año. Con más de 1.600 € de dividendos hay que declarar; por debajo compensa hacerlo, porque devuelven lo retenido de más.
+- **Un aviso** de que, con el 33 % del capital o el 25 % siendo administrador, los dividendos suman a los rendimientos del RETA y la cuota puede subir al regularizar. No se calcula.
+
+No incluye el Impuesto sobre Sociedades, otros rendimientos del ahorro ni la compensación de pérdidas.
+
 ## Parámetros
 
 Están todos en `PARAMETROS`, al principio de `calculadora.js`:
@@ -43,14 +54,19 @@ Están todos en `PARAMETROS`, al principio de `calculadora.js`:
 | Cuota de autónomo (RETA) | 28,30 % + 1,30 % + cese 0,90 % + FP 0,10 % + MEI 0,90 % = 31,50 % | Orden PJC/297/2026, arts. 18 y 37 |
 | Tramos del RETA | 15 tramos de rendimientos mensuales, de 653,59 € a 5.101,20 € de base | Orden PJC/297/2026, art. 18 |
 | Rendimientos de un socio para el RETA | Todo lo que cobra de la sociedad menos un 3 %; base mínima de 1.424,40 € | LGSS, art. 308.1.a) regla 4.ª y 308.1.c) reglas 1.ª y 2.ª |
+| Tarifa del ahorro | 19 % hasta 7.500 € … 28 % desde 300.000 € | NF 13/2013, art. 76 (NF 2/2025) |
+| Exención de dividendos | 1.500 € al año | NF 13/2013, art. 9 |
+| Retención sobre dividendos | 19 % | Reglamento del IRPF (DF 47/2014) |
 
 Comprobados en septiembre de 2026 con la [Orden PJC/297/2026 en el BOE](https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-7296), con las comparativas oficiales de Hacienda de Bizkaia de los cambios del IRPF en [2026](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01877) y [2025](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01876), con la [tabla de retenciones de 2026](https://www.bizkaia.eus/documents/26740887/26976067/tabla-de-retenciones-2026-01.pdf) y el [Reglamento del IRPF](https://www.bizkaia.eus/documents/880307/15187815/ca_47_2014.pdf), y con la [Ley General de la Seguridad Social](https://www.boe.es/buscar/act.php?id=BOE-A-2015-11724) para el RETA. Los tests comprueban la tarifa con las cuotas acumuladas de la tabla oficial.
 
 ## Estructura
 
-- `index.html`: la página y sus estilos.
+- `index.html` y `app.js`: la calculadora de sueldo (formulario, resumen del coste al neto, cascada, nómina, cálculo detallado y enlace para compartir), para el asalariado y para el socio autónomo.
+- `dividendos.html` y `dividendos.js`: la calculadora de dividendos del socio.
 - `calculadora.js`: la lógica de cálculo, sin DOM. Se usa en el navegador y en los tests.
-- `app.js`: la interfaz (formulario, resumen del coste al neto, cascada, nómina, cálculo detallado y enlace para compartir), para el asalariado y para el socio autónomo.
+- `comun.js`: lo que comparten las dos páginas (formato de importes, casillas de importe, bloques plegables en el móvil, enlace para compartir).
+- `estilos.css`: los estilos de las dos páginas.
 - `tests/`: tests con `node:test`.
 
 ## Tests
@@ -62,5 +78,5 @@ npm test
 ## Actualizar a un año nuevo
 
 1. Cambiar `PARAMETROS` en `calculadora.js`.
-2. Revisar los textos de `index.html` que citan importes y el año.
+2. Revisar los textos de `index.html` y `dividendos.html` que citan importes y el año.
 3. Ajustar los tests y ejecutar `npm test`.
