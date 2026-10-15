@@ -319,7 +319,7 @@
   }
 
   function leerUrl() {
-    const q = new URLSearchParams(location.search);
+    const q = I.datosIniciales();
     if (q.has('importe')) campoImporte.value = I.cifraDeUrl(q.get('importe'));
     if (q.has('capital')) campoCapital.value = q.get('capital');
     if (q.get('admin') === 'no') casillaAdministrador.checked = false;
@@ -333,7 +333,6 @@
   // === Bucle principal ===
 
   let temporizadorCalculo = null;
-  let temporizadorUrl = null;
   let temporizadorResumen = null;
 
   function calcular() {
@@ -374,8 +373,7 @@
     pintarTabla(r);
     pintarMarginal(r);
 
-    clearTimeout(temporizadorUrl);
-    temporizadorUrl = setTimeout(function () { escribirUrl(e); }, 300);
+    escribirUrl(e);
 
     clearTimeout(temporizadorResumen);
     temporizadorResumen = setTimeout(function () {
@@ -400,6 +398,8 @@
     calcularEnUnMomento();
   });
   $('resultado-rapido').addEventListener('click', function () { I.irA(document.querySelector('.resultados')); });
+  // Si se cambia de pestaña antes de que dé tiempo a calcular, lo escrito se guarda igual.
+  window.addEventListener('pagehide', function () { escribirUrl(leerEntrada()); });
   I.prepararPlegables();
   I.prepararCompartir($('compartir'));
   let temporizadorAncho = null;

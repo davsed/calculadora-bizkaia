@@ -636,7 +636,7 @@
   }
 
   function leerUrl() {
-    const q = new URLSearchParams(location.search);
+    const q = I.datosIniciales();
     const marcar = function (nombre, valor) {
       const radio = formulario.querySelector('input[name="' + nombre + '"][value="' + CSS.escape(valor || '') + '"]');
       if (radio) radio.checked = true;
@@ -664,7 +664,6 @@
   // === Bucle principal ===
 
   let temporizadorResumen = null;
-  let temporizadorUrl = null;
 
   // Deja la casilla de euros y la de porcentaje de acuerdo con la base que se usa. Una base
   // por encima de la máxima se corrige al momento; por debajo de la mínima, al salir de la
@@ -733,8 +732,7 @@
     pintarNomina(r);
     pintarDesglose(r);
 
-    clearTimeout(temporizadorUrl);
-    temporizadorUrl = setTimeout(function () { escribirUrl(e); }, 300);
+    escribirUrl(e);
 
     clearTimeout(temporizadorResumen);
     temporizadorResumen = setTimeout(function () {

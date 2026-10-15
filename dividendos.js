@@ -189,7 +189,7 @@
   }
 
   function leerUrl() {
-    const q = new URLSearchParams(location.search);
+    const q = I.datosIniciales();
     const radio = formulario.querySelector('input[name="modo"][value="' + CSS.escape(q.get('modo') || '') + '"]');
     if (radio) radio.checked = true;
     if (q.has('importe')) campoImporte.value = I.cifraDeUrl(q.get('importe'));
@@ -199,7 +199,6 @@
   // === Bucle principal ===
 
   let temporizadorResumen = null;
-  let temporizadorUrl = null;
 
   function calcular() {
     const e = leerEntrada();
@@ -224,8 +223,7 @@
     pintarDesglose(r);
     pintarMarginal(e, r);
 
-    clearTimeout(temporizadorUrl);
-    temporizadorUrl = setTimeout(function () { escribirUrl(e); }, 300);
+    escribirUrl(e);
 
     clearTimeout(temporizadorResumen);
     temporizadorResumen = setTimeout(function () {
