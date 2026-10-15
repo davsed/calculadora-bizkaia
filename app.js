@@ -18,47 +18,13 @@
   const ATEP_POR_DEFECTO = '1,00';
   const UMBRAL_DECLARAR = P.irpf.umbralObligacionDeclarar;
 
-  const euros = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', useGrouping: 'always' });
-  const eurosSinCentimos = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0, useGrouping: 'always' });
-  // Con el signo menos tipográfico, como en los importes.
-  const formatoPorcentaje = new Intl.NumberFormat('es-ES', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const porcentaje = { format: function (x) { return formatoPorcentaje.format(x || 0).replace('-', '−'); } };
+  const I = window.InterfazBizkaia;
+  const { porcentaje, dinero, euroRedondo, importeRedondo, el } = I;
   const porcentajeEntero = new Intl.NumberFormat('es-ES', { style: 'percent', maximumFractionDigits: 0 });
   const tipo = new Intl.NumberFormat('es-ES', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 });
   // Para escribir dentro de las casillas: "4.050,00" y "37,5".
   const cifraConCentimos = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' });
-  const cifraHastaCentimos = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2, useGrouping: 'always' });
   const cifraPorcentaje = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
-
-  // Evita "-0,00 €" y permite forzar el signo en los desgloses.
-  function dinero(x, conSigno) {
-    const redondeado = Math.round(x * 100) / 100 || 0;
-    const texto = euros.format(Math.abs(redondeado));
-    if (redondeado < 0) return '−' + texto;
-    return conSigno && redondeado > 0 ? '+' + texto : texto;
-  }
-
-  // Sin céntimos: para las cifras grandes y los importes aproximados ("unos 59 €").
-  function euroRedondo(x) {
-    const redondeado = Math.round(x) || 0;
-    return (redondeado < 0 ? '−' : '') + eurosSinCentimos.format(Math.abs(redondeado));
-  }
-
-  // Para cifras fijas dentro de un texto: "20.000 €" en vez de "20.000,00 €".
-  function importeRedondo(x) {
-    return Number.isInteger(x) ? eurosSinCentimos.format(x) : euros.format(x);
-  }
-
-  function el(etiqueta, atributos, hijos) {
-    const nodo = document.createElement(etiqueta);
-    Object.keys(atributos || {}).forEach(function (clave) {
-      if (clave === 'texto') nodo.textContent = atributos[clave];
-      else if (clave === 'clase') nodo.className = atributos[clave];
-      else nodo.setAttribute(clave, atributos[clave]);
-    });
-    (hijos || []).forEach(function (hijo) { if (hijo) nodo.appendChild(hijo); });
-    return nodo;
-  }
 
   // "a 1 %, b 2 % y c 3 %"
   function enumerar(partes) {
@@ -666,13 +632,7 @@
       if (e.contrato === 'temporal') q.set('contrato', 'temporal');
       if (campoAtEp.value.trim() !== ATEP_POR_DEFECTO) q.set('atep', campoAtEp.value.trim());
     }
-    try { history.replaceState(null, '', location.pathname + '?' + q.toString()); } catch { /* file:// */ }
-  }
-
-  // Los enlaces antiguos pueden traer "30000" o "2150.5": se muestran como "30.000" y "2.150,5".
-  function cifraDeUrl(texto) {
-    const valor = C.parseImporte(texto);
-    return Number.isFinite(valor) ? cifraHastaCentimos.format(valor) : texto;
+    I.escribirUrl(q);
   }
 
   function leerUrl() {
@@ -686,12 +646,12 @@
     marcar('periodo', q.get('periodo'));
     marcar('pagas', q.get('pagas'));
     marcar('pagaCuota', q.get('pagacuota'));
-    if (q.has('base')) campoBaseReta.value = cifraDeUrl(q.get('base'));
+    if (q.has('base')) campoBaseReta.value = I.cifraDeUrl(q.get('base'));
     if (q.has('basepct')) {
       campoPorcentajeReta.value = q.get('basepct');
       basePorPorcentaje = true;
     }
-    if (q.has('importe')) campoImporte.value = cifraDeUrl(q.get('importe'));
+    if (q.has('importe')) campoImporte.value = I.cifraDeUrl(q.get('importe'));
     if (/^[0-6]$/.test(q.get('hijos') || '')) selectHijos.value = q.get('hijos');
     actualizarOpcionesHijos();
     if (/^[0-6]$/.test(q.get('menores6') || '')) selectMenores6.value = String(Math.min(Number(q.get('menores6')), Number(selectHijos.value)));
@@ -786,40 +746,12 @@
     }, 700);
   }
 
-  // Pone el punto de los miles mientras se escribe, sin mover el cursor de su sitio.
-  function agruparCampo(campo, evento) {
-    if (evento.inputType === 'insertFromPaste' || evento.inputType === 'insertFromDrop') {
-      const pegado = C.parseImporte(campo.value);
-      if (Number.isFinite(pegado)) {
-        campo.value = cifraHastaCentimos.format(pegado);
-        return;
-      }
-    }
-    const resultado = C.agruparMiles(campo.value, campo.selectionStart);
-    if (resultado.texto === campo.value) return;
-    campo.value = resultado.texto;
-    campo.setSelectionRange(resultado.cursor, resultado.cursor);
-  }
-
-  // Al borrar un punto de los miles se borra la cifra de al lado; si no, el punto volvería a salir.
-  function saltarPuntoAlBorrar(evento) {
-    const campo = evento.target;
-    if (campo.selectionStart !== campo.selectionEnd) return;
-    const posicion = campo.selectionStart;
-    if (evento.inputType === 'deleteContentBackward' && campo.value[posicion - 1] === '.') {
-      campo.setSelectionRange(posicion - 1, posicion - 1);
-    } else if (evento.inputType === 'deleteContentForward' && campo.value[posicion] === '.') {
-      campo.setSelectionRange(posicion + 1, posicion + 1);
-    }
-  }
-  [campoImporte, campoBaseReta].forEach(function (campo) {
-    campo.addEventListener('beforeinput', saltarPuntoAlBorrar);
-  });
+  I.prepararCampoImporte(campoImporte, { seleccionarAlTocar: true });
+  I.prepararCampoImporte(campoBaseReta);
 
   function alCambiar(evento) {
     const objetivo = evento.target;
     if (objetivo === selectHijos) actualizarOpcionesHijos();
-    if (evento.type === 'input' && (objetivo === campoImporte || objetivo === campoBaseReta)) agruparCampo(objetivo, evento);
     if (objetivo === deslizadorReta || objetivo === campoPorcentajeReta) {
       basePorPorcentaje = true;
       if (objetivo === deslizadorReta) campoPorcentajeReta.value = deslizadorReta.value;
@@ -828,64 +760,15 @@
     }
     calcular(evento);
   }
-  formulario.addEventListener('submit', function (evento) { evento.preventDefault(); });
+  I.prepararFormulario(formulario);
   formulario.addEventListener('input', alCambiar);
   formulario.addEventListener('change', alCambiar);
 
-  // La tecla Intro (o «OK» en el teclado del móvil) cierra el teclado para ver el resultado.
-  formulario.addEventListener('keydown', function (evento) {
-    if (evento.key === 'Enter' && evento.target.type === 'text') evento.target.blur();
-  });
-
-  // En pantallas táctiles, al tocar el importe se selecciona entero para escribir encima.
-  if (window.matchMedia('(pointer: coarse)').matches) {
-    campoImporte.addEventListener('focus', function () {
-      setTimeout(function () { campoImporte.select(); }, 0);
-    });
-  }
-
-  $('resultado-rapido').addEventListener('click', function () {
-    campoImporte.blur();
-    const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.querySelector('.resultados').scrollIntoView({ behavior: suave ? 'smooth' : 'auto', block: 'start' });
-  });
-
-  const botonExplicaciones = $('ver-explicaciones');
-  botonExplicaciones.addEventListener('click', function () {
-    const abierto = document.querySelector('.resultados').classList.toggle('con-explicaciones');
-    botonExplicaciones.setAttribute('aria-expanded', String(abierto));
-    botonExplicaciones.textContent = abierto ? 'Ocultar' : 'Explicar';
-  });
-
-  // Lo que en el móvil va plegado se queda abierto en pantalla ancha, también al ensanchar la ventana.
-  const escritorio = window.matchMedia('(min-width: 860px)');
-  const plegables = document.querySelectorAll('.plegable-movil');
-  function abrirEnEscritorio() {
-    if (escritorio.matches) plegables.forEach(function (d) { d.open = true; });
-  }
-  plegables.forEach(function (d) { d.addEventListener('toggle', abrirEnEscritorio); });
-  escritorio.addEventListener('change', abrirEnEscritorio);
-
-  const botonDetalle = $('ver-detalle');
-  botonDetalle.addEventListener('click', function () {
-    const abierto = $('tabla-anual').classList.toggle('sin-detalle') === false;
-    botonDetalle.setAttribute('aria-expanded', String(abierto));
-    botonDetalle.textContent = abierto ? 'Ocultar el detalle' : 'Ver el detalle';
-  });
-
-  const botonCompartir = $('compartir');
-  if (navigator.clipboard && window.isSecureContext) {
-    botonCompartir.hidden = false;
-    botonCompartir.addEventListener('click', function () {
-      navigator.clipboard.writeText(location.href).then(function () {
-        botonCompartir.textContent = 'Enlace copiado';
-      }, function () {
-        botonCompartir.textContent = 'No se ha podido copiar: copia la dirección del navegador';
-      }).then(function () {
-        setTimeout(function () { botonCompartir.textContent = 'Copiar enlace a este cálculo'; }, 2500);
-      });
-    });
-  }
+  $('resultado-rapido').addEventListener('click', function () { I.irA(document.querySelector('.resultados')); });
+  I.alternar($('ver-explicaciones'), document.querySelector('.resultados'), 'con-explicaciones', ['Explicar', 'Ocultar']);
+  I.alternar($('ver-detalle'), $('tabla-anual'), 'con-detalle', ['Ver el detalle', 'Ocultar el detalle']);
+  I.prepararPlegables();
+  I.prepararCompartir($('compartir'));
 
   leerUrl();
   calcular();
