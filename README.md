@@ -19,7 +19,7 @@ No tiene en cuenta otros ingresos, aportaciones a EPSV o planes de pensiones, la
 Para el socio que controla su sociedad y está en el RETA (LGSS, art. 305.2.b), con un cargo de administrador sin sueldo por estatutos y una nómina por su trabajo:
 
 - **La cuota de autónomo** sale de sus rendimientos: todo lo que le paga la sociedad por su trabajo (también la cuota, si la paga ella) menos un 3 % de gastos genéricos, repartido por meses. Con eso se busca el tramo de la tabla de 2026 y se aplica un 31,50 % a la base mínima del tramo, que para un socio no baja de la base mínima del grupo 7 del Régimen General (1.424,40 €). También se puede elegir otra base dentro del tramo.
-- **El IRPF**: en Bizkaia lo que cobra por su trabajo es rendimiento del trabajo (con la bonificación del art. 23) y la cuota se resta como gasto (art. 22). Si la paga la sociedad, cuenta además como sueldo en especie, así que el neto es el mismo la pague quien la pague; cambia la nómina. La retención sale de la tabla general, porque el cargo de administrador no se cobra.
+- **El IRPF**: en Bizkaia lo que cobra por su trabajo es rendimiento del trabajo (con la bonificación del art. 23) y la cuota se resta como gasto (art. 22). Si la paga la sociedad, cuenta además como sueldo en especie, así que el neto es el mismo la pague quien la pague; cambia la nómina. La retención sale de la tabla general, porque el cargo de administrador no se cobra. El tipo se busca con todo lo que paga la sociedad: si paga la cuota, la nómina más la cuota.
 - **La comparación** con lo que le llegaría como asalariado con el mismo coste para la sociedad.
 - **Avisos** cuando la cuota mínima se come lo que paga la sociedad o cuando, al subir de tramo, un poco más de sueldo deja menos neto.
 

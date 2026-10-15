@@ -423,7 +423,8 @@
     let nota = textoDeclaracion(r);
     if (esSocio && r.costeAnual > 0) {
       nota = (r.opciones.cuotaPagaSociedad
-        ? 'La sociedad paga además la cuota de autónomo, ' + dinero(n.especie) + ' al mes. Cuenta como sueldo en especie, así que también lleva retención. '
+        ? 'La sociedad paga además la cuota de autónomo, ' + dinero(n.especie) + ' al mes. Cuenta como sueldo en especie, así que también lleva retención ' +
+          'y para la tabla de retenciones se suma al bruto: el tipo se busca con ' + euroRedondo(r.costeAnual) + ' al año. '
         : 'El socio paga la cuota de autónomo de su bolsillo, ' + dinero(n.cuotaSocio) + ' al mes. ') + nota;
     }
     $('nota-nomina').textContent = nota;
@@ -466,7 +467,7 @@
     detalle('Minoración de cuota', -ir.minoracion);
     if (o.hijos > 0) detalle('Deducción por hijos', -ir.deduccionDescendientes);
     detalle('Cuota líquida', ir.cuotaLiquida);
-    detalle('Retenido en nómina (' + porcentajeEntero.format(ir.tipoRetencion) + ')', ir.retencion);
+    detalle('Retenido en nómina (' + porcentajeEntero.format(ir.tipoRetencion) + (r.tipo === 'socio' ? ' del rendimiento íntegro' : '') + ')', ir.retencion);
     if (ir.obligadoADeclarar || ir.resultadoDeclaracion < -0.005) {
       detalle(ir.resultadoDeclaracion >= 0 ? 'A pagar en la declaración' : 'A devolver en la declaración', Math.abs(ir.resultadoDeclaracion));
     } else {
