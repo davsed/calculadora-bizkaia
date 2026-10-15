@@ -299,6 +299,14 @@ thead th { font-size: 0.85rem; font-weight: 600; color: var(--ink-2); }
   .tarjeta { padding: 16px; }
   .proporcion-numero { font-size: 2.6rem; }
 }
+/* En los móviles estrechos, un botón de opción que no cabe pasa a dos líneas y la fila iguala alturas. */
+@media (max-width: 380px) {
+  .segmentado-auto label { display: flex; }
+  .segmentado-auto span {
+    flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
+    white-space: normal; padding: 12px 4px; line-height: 1.25;
+  }
+}
 /* Que la nómina quepa sin deslizar en los móviles más estrechos. */
 @media (max-width: 360px) {
   table { font-size: 0.875rem; }

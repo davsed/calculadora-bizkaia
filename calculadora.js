@@ -1,7 +1,8 @@
 /*
  * Calculadora de sueldo neto, bruto y coste de empresa en Bizkaia (2026), para
  * personas asalariadas y para socios de su propia sociedad dados de alta en el RETA,
- * y del IRPF de los dividendos que la sociedad reparte al socio.
+ * y de los dividendos que la sociedad reparte al socio: lo que le cuestan a la sociedad, con el
+ * Impuesto sobre Sociedades, y lo que le queda al socio tras el IRPF.
  *
  * Lógica de cálculo pura, sin DOM: la usan index.html y dividendos.html en el
  * navegador y los tests con Node (`node --test`). Todos los importes son anuales salvo que el
@@ -165,6 +166,15 @@
       // una deducción por gastos genéricos del 3 % (art. 308.1).
       baseMinimaSocietario: 1424.40,
       gastosGenericosSocietario: 0.03
+    },
+    // Impuesto sobre Sociedades: Norma Foral 11/2013 de Bizkaia, arts. 13, 56 y 59.
+    impuestoSociedades: {
+      // Microempresas y pequeñas empresas: activo o volumen de operaciones de hasta 10 millones
+      // de euros y menos de 50 personas en plantilla.
+      tipoPequenaEmpresa: 0.20,
+      tipoGeneral: 0.24,
+      // Con deducciones, la cuota de una pequeña empresa no baja de este porcentaje de la base.
+      tributacionMinimaPequena: 0.15
     }
   };
 
@@ -552,13 +562,24 @@
     };
   }
 
-  function calcularDividendosDesdeBruto(brutoAnual) {
+  // Lo que le queda al socio de un dividendo bruto, ya hecha la declaración.
+  function netoDividendo(bruto) {
+    return bruto - irpfDividendos(bruto).cuota;
+  }
+
+  function calcularDividendosDesdeBruto(brutoAnual, tipoIS) {
     const bruto = Math.max(0, brutoAnual);
     const renta = irpfDividendos(bruto);
     const neto = bruto - renta.cuota;
     const ultimo = renta.tramos[renta.tramos.length - 1];
+    // El dividendo sale del beneficio después del Impuesto sobre Sociedades: para repartirlo,
+    // la sociedad necesita un beneficio antes de impuestos de bruto / (1 - tipo).
+    const coste = bruto / (1 - tipoIS);
     return {
       tipo: 'dividendos',
+      tipoIS: tipoIS,
+      costeAnual: coste,
+      impuestoSociedades: coste - bruto,
       brutoAnual: bruto,
       // Lo que llega a la cuenta al repartir, con la retención ya descontada.
       cobrado: bruto - renta.retencion,
@@ -567,21 +588,28 @@
       tipoEfectivo: bruto > 0 ? renta.cuota / bruto : 0,
       // Lo que se paga por el siguiente euro: nada mientras quede exención.
       tipoMarginal: bruto < PARAMETROS.irpf.exencionDividendos ? 0 : ultimo ? ultimo.tipo : PARAMETROS.irpf.escalaAhorro[0].tipo,
-      netoPorCada100: 100 - (irpfDividendos(bruto + 100).cuota - renta.cuota)
+      // Cuánto más le queda con 100 € más de dividendo, y con 100 € más de beneficio.
+      netoPorCada100: netoDividendo(bruto + 100) - neto,
+      netoPorCada100Coste: netoDividendo(bruto + 100 * (1 - tipoIS)) - neto
     };
   }
 
   /**
-   * Dividendos de un socio en el año, a partir del bruto que le corresponde en el reparto
-   * o del neto que quiere que le quede.
-   * entrada: { modo: 'bruto' | 'neto', importe }
+   * Dividendos de un socio en el año, a partir de lo que le cuesta a la sociedad (el beneficio
+   * antes del Impuesto sobre Sociedades), del bruto que le corresponde en el reparto o del neto
+   * que quiere que le quede.
+   * entrada: { modo: 'coste' | 'bruto' | 'neto', importe, tipoIS }
+   * `tipoIS` es el tipo del Impuesto sobre Sociedades; por defecto, el de las pequeñas empresas.
    */
   function calcularDividendos(entrada) {
     const importe = Math.max(0, Number(entrada.importe) || 0);
-    const bruto = entrada.modo === 'neto'
-      ? invertir(function (b) { return b - irpfDividendos(b).cuota; }, importe, [])
-      : importe;
-    return calcularDividendosDesdeBruto(bruto);
+    const tipoIS = Number.isFinite(entrada.tipoIS) && entrada.tipoIS >= 0 && entrada.tipoIS < 1
+      ? entrada.tipoIS
+      : PARAMETROS.impuestoSociedades.tipoPequenaEmpresa;
+    let bruto = importe;
+    if (entrada.modo === 'coste') bruto = importe * (1 - tipoIS);
+    else if (entrada.modo === 'neto') bruto = invertir(netoDividendo, importe, []);
+    return calcularDividendosDesdeBruto(bruto, tipoIS);
   }
 
   // Donde el neto puede bajar de golpe: los tramos de retención y, para el socio, los del RETA.

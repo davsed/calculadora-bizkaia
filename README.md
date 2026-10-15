@@ -1,6 +1,6 @@
 # Calculadora de sueldo neto en Bizkaia
 
-Calculadora web para ver de un vistazo cuánto cuesta un puesto de trabajo a la empresa, cuánto de eso llega a la cuenta del trabajador y a dónde va el resto, en Bizkaia, con el IRPF foral y las cotizaciones a la Seguridad Social de 2026. Se puede partir del bruto, del neto o del coste para la empresa. Tiene también un modo para socios autónomos que cobran por nómina de su propia sociedad y, en otra pestaña, una calculadora del IRPF de los dividendos que la sociedad reparte al socio.
+Calculadora web para ver de un vistazo cuánto cuesta un puesto de trabajo a la empresa, cuánto de eso llega a la cuenta del trabajador y a dónde va el resto, en Bizkaia, con el IRPF foral y las cotizaciones a la Seguridad Social de 2026. Se puede partir del bruto, del neto o del coste para la empresa. Tiene también un modo para socios autónomos que cobran por nómina de su propia sociedad y, en otra pestaña, una calculadora de los dividendos que la sociedad reparte al socio: lo que le cuestan a la sociedad, con el Impuesto sobre Sociedades, y lo que le queda al socio tras el IRPF.
 
 https://davsed.github.io/calculadora-bizkaia/
 
@@ -27,14 +27,16 @@ No incluye los dividendos, que también cuentan para la cuota de autónomo, ni l
 
 ### Dividendos del socio
 
-En la pestaña «Dividendos» (`dividendos.html`), a partir del dividendo bruto que le toca al socio en el año o de lo que quiere que le quede:
+En la pestaña «Dividendos» (`dividendos.html`), a partir de lo que le cuesta a la sociedad, del dividendo bruto que le toca al socio en el año o de lo que quiere que le quede:
+
+- **Lo que le cuesta a la sociedad**: el beneficio antes del Impuesto sobre Sociedades que necesita para repartir el dividendo. Con el 20 % de las microempresas y pequeñas empresas, 10.000 € de beneficio dan 8.000 € de dividendo. El tipo se puede cambiar: 24 % si no es pequeña empresa, o menos si aplica deducciones, sin bajar del 15 % de tributación mínima de una pequeña empresa.
 
 - **El IRPF de la base del ahorro**: los dividendos están exentos hasta 1.500 € al año y el resto tributa con la tarifa del ahorro de 2026, del 19 % al 28 %, aparte del sueldo.
 - **La retención** del 19 % sobre todo el dividendo, también la parte exenta: lo que cobra en la cuenta al repartir.
 - **La declaración de la renta**: lo que sale a pagar o a devolver comparando lo retenido con el IRPF del año. Con más de 1.600 € de dividendos hay que declarar; por debajo compensa hacerlo, porque devuelven lo retenido de más.
 - **Un aviso** de que, con el 33 % del capital o el 25 % siendo administrador, los dividendos suman a los rendimientos del RETA y la cuota puede subir al regularizar. No se calcula.
 
-No incluye el Impuesto sobre Sociedades, otros rendimientos del ahorro ni la compensación de pérdidas.
+No incluye las sociedades patrimoniales, que desde 2026 tributan con la escala del ahorro, otros rendimientos del ahorro ni la compensación de pérdidas.
 
 ## Parámetros
 
@@ -56,11 +58,12 @@ Están todos en `PARAMETROS`, al principio de `calculadora.js`:
 | Rendimientos de un socio para el RETA | Todo lo que cobra de la sociedad menos un 3 %; base mínima de 1.424,40 € | LGSS, art. 308.1.a) regla 4.ª y 308.1.c) reglas 1.ª y 2.ª |
 | Tarifa del ahorro | 19 % hasta 7.500 € … 28 % desde 300.000 € | NF 13/2013, art. 76 (NF 2/2025) |
 | Exención de dividendos | 1.500 € al año | NF 13/2013, art. 9 |
-| Retención sobre dividendos | 19 % | Reglamento del IRPF (DF 47/2014) |
+| Retención sobre dividendos | 19 % | Reglamento del IRPF (DF 47/2014), arts. 89 y 92 |
+| Impuesto sobre Sociedades | 20 % microempresas y pequeñas empresas, 24 % general; tributación mínima del 15 % en pequeñas empresas | NF 11/2013, arts. 13, 56 y 59 |
 
 Comprobados en septiembre de 2026 con la [Orden PJC/297/2026 en el BOE](https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-7296), con las comparativas oficiales de Hacienda de Bizkaia de los cambios del IRPF en [2026](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01877) y [2025](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01876), con la [tabla de retenciones de 2026](https://www.bizkaia.eus/documents/26740887/26976067/tabla-de-retenciones-2026-01.pdf) y el [Reglamento del IRPF](https://www.bizkaia.eus/documents/880307/15187815/ca_47_2014.pdf), y con la [Ley General de la Seguridad Social](https://www.boe.es/buscar/act.php?id=BOE-A-2015-11724) para el RETA. Los tests comprueban la tarifa con las cuotas acumuladas de la tabla oficial.
 
-Los parámetros de los dividendos, en octubre de 2026: la tarifa del ahorro con la [comparativa de 2026](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01877) (art. 76 en la redacción de la NF 2/2025, con efectos desde el 1 de enero de 2026; los tests usan sus cuotas acumuladas), la exención de 1.500 € y que la minoración solo reduce la cuota general con el [texto consolidado de la Norma Foral 13/2013](https://www.bizkaia.eus/documents/880307/27501802/ca_13_2013.pdf/99c24b02-2b3e-821f-a6c5-5a62df447e32?t=1770098453680) (arts. 9.24 y 74), y la retención del 19 % sobre todo el dividendo, también la parte exenta, con el Reglamento (arts. 89 y 92.1).
+Los parámetros de los dividendos, en octubre de 2026: la tarifa del ahorro con la [comparativa de 2026](https://dfb.microsoftcrmportals.com/es-ES/Articulo/?Code=KA-01877) (art. 76 en la redacción de la NF 2/2025, con efectos desde el 1 de enero de 2026; los tests usan sus cuotas acumuladas), la exención de 1.500 € y que la minoración solo reduce la cuota general con el [texto consolidado de la Norma Foral 13/2013](https://www.bizkaia.eus/documents/880307/27501802/ca_13_2013.pdf/99c24b02-2b3e-821f-a6c5-5a62df447e32?t=1770098453680) (arts. 9.24 y 74), y la retención del 19 % sobre todo el dividendo, también la parte exenta, con el Reglamento (arts. 89 y 92.1). El Impuesto sobre Sociedades, con el [texto consolidado de la Norma Foral 11/2013](https://www.bizkaia.eus/documents/880307/15187815/ca_11_2013.pdf/5a463c1d-a59b-7e48-6429-80fd22f30bc6?t=1768908575887) actualizado a 1 de enero de 2026 (arts. 13, 56 y 59).
 
 ## Estructura
 
