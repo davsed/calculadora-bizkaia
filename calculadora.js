@@ -189,7 +189,12 @@
     cuotaPagaSociedad: true,
     baseReta: null,
     // De 0 (la base mínima del tramo) a 1 (la máxima). Si está, manda sobre baseReta.
-    porcentajeBaseReta: null
+    porcentajeBaseReta: null,
+    // Dividendos íntegros de su sociedad en el año que cuentan para la cuota de autónomo: con el
+    // 33 % del capital, o el 25 % siendo administrador (LGSS, art. 308.1.c, regla 1.ª).
+    dividendosReta: 0,
+    // Otras rentas que obligan a declarar, como más de 1.600 € de dividendos.
+    obligadoPorOtrasRentas: false
   };
 
   function normalizarOpciones(opciones) {
@@ -203,6 +208,8 @@
     o.cuotaPagaSociedad = o.cuotaPagaSociedad !== false;
     o.baseReta = Number.isFinite(o.baseReta) && o.baseReta > 0 ? o.baseReta : null;
     o.porcentajeBaseReta = Number.isFinite(o.porcentajeBaseReta) ? Math.min(Math.max(o.porcentajeBaseReta, 0), 1) : null;
+    o.dividendosReta = Number.isFinite(o.dividendosReta) && o.dividendosReta > 0 ? o.dividendosReta : 0;
+    o.obligadoPorOtrasRentas = o.obligadoPorOtrasRentas === true;
     return o;
   }
 
@@ -325,7 +332,8 @@
 
     const tipo = tipoRetencion(brutoAnual, opciones);
     const retencion = brutoAnual * tipo;
-    const obligadoADeclarar = Math.round(brutoAnual * 100) / 100 > p.umbralObligacionDeclarar;
+    const obligadoADeclarar = normalizarOpciones(opciones).obligadoPorOtrasRentas ||
+      Math.round(brutoAnual * 100) / 100 > p.umbralObligacionDeclarar;
     // Sin obligación de declarar, solo compensa hacerlo si sale a devolver.
     const aPagar = obligadoADeclarar ? cuotaLiquida : Math.min(cuotaLiquida, retencion);
     return {
@@ -419,8 +427,8 @@
     const p = PARAMETROS.reta;
     const o = normalizarOpciones(opciones);
     // Para la Seguridad Social cuenta todo lo que cobra de la sociedad por su trabajo (también
-    // la cuota, si se la paga ella) menos un 3 % de gastos genéricos.
-    const rendimientoMensual = Math.max(0, costeAnual) * (1 - p.gastosGenericosSocietario) / 12;
+    // la cuota, si se la paga ella) y, si cuentan, sus dividendos, menos un 3 % de gastos genéricos.
+    const rendimientoMensual = (Math.max(0, costeAnual) + o.dividendosReta) * (1 - p.gastosGenericosSocietario) / 12;
     const tramo = tramoReta(rendimientoMensual);
     const baseMinima = Math.max(tramo.min, p.baseMinimaSocietario);
     const baseMaxima = Math.max(tramo.max, p.baseMinimaSocietario);
@@ -612,6 +620,104 @@
     return calcularDividendosDesdeBruto(bruto, tipoIS);
   }
 
+  // === Sueldo o dividendos: el mejor reparto de lo que la sociedad gasta en el socio ===
+
+  // Un reparto del presupuesto: `nomina` es lo que cuesta la nómina a la sociedad (su sueldo
+  // bruto, con la cuota) y el resto es beneficio que, tras el Impuesto sobre Sociedades, se le
+  // reparte como dividendo. `o` lleva las opciones del socio, `tipoIS` y `dividendosEnReta`.
+  function repartoSocio(presupuesto, nomina, o) {
+    const beneficio = presupuesto - nomina;
+    const dividendo = beneficio * (1 - o.tipoIS);
+    const div = irpfDividendos(dividendo);
+    // Con más de 1.600 € de dividendos hay que declarar, también la nómina; y si el socio tiene
+    // el 33 % del capital, o el 25 % siendo administrador, el dividendo suma para su cuota.
+    const opcionesNomina = Object.assign({}, o, {
+      dividendosReta: o.dividendosEnReta ? dividendo : 0,
+      obligadoPorOtrasRentas: div.obligadoADeclarar
+    });
+    const reta = cotizacionReta(nomina, opcionesNomina);
+    const renta = irpf(nomina, reta.cuotaAnual, opcionesNomina);
+    const netoNomina = nomina - reta.cuotaAnual - renta.aPagar;
+    const netoDividendo = dividendo - div.cuota;
+    return {
+      nomina: nomina,
+      beneficio: beneficio,
+      dividendo: dividendo,
+      cuotaReta: reta.cuotaAnual,
+      irpfNomina: renta.aPagar,
+      impuestoSociedades: beneficio * o.tipoIS,
+      irpfDividendo: div.cuota,
+      netoNomina: netoNomina,
+      netoDividendo: netoDividendo,
+      neto: netoNomina + netoDividendo,
+      // La nómina tiene que llegar al menos para la cuota de autónomo.
+      cubreCuota: nomina >= reta.cuotaAnual - 0.005
+    };
+  }
+
+  /**
+   * El mejor reparto entre nómina y dividendos de lo que la sociedad puede gastar en el socio en
+   * el año, antes del Impuesto sobre Sociedades. Prueba todos los repartos, de 10 en 10 €, desde
+   * la nómina que justo paga la cuota de autónomo hasta todo en nómina, y se queda con el que
+   * más le deja: no basta con ir euro a euro, porque hay saltos (los tramos del RETA, los
+   * 20.000 € sin declarar) que lo dejarían parado antes de tiempo. A igualdad, más nómina.
+   * entrada: { importe, tipoIS, dividendosEnReta, hijos, menores6, deduccionCompartida }
+   */
+  function calcularReparto(entrada) {
+    const presupuesto = Math.max(0, Number(entrada.importe) || 0);
+    const o = normalizarOpciones({ hijos: entrada.hijos, menores6: entrada.menores6, deduccionCompartida: entrada.deduccionCompartida });
+    o.tipoIS = Number.isFinite(entrada.tipoIS) && entrada.tipoIS >= 0 && entrada.tipoIS < 1
+      ? entrada.tipoIS
+      : PARAMETROS.impuestoSociedades.tipoPequenaEmpresa;
+    o.dividendosEnReta = entrada.dividendosEnReta !== false;
+
+    // Hasta unos 20.000 repartos: de 10 en 10 € hasta 200.000 €, y a pasos mayores por encima.
+    const paso = Math.max(10, Math.ceil(presupuesto / 20000 / 10) * 10);
+    const todoNomina = repartoSocio(presupuesto, presupuesto, o);
+    // La nómina más baja posible es la cuota mínima de un socio (con la sociedad pagándola).
+    const t = PARAMETROS.reta.tipos;
+    const cuotaMinima = PARAMETROS.reta.baseMinimaSocietario * 12 *
+      (t.contingenciasComunes + t.contingenciasProfesionales + t.ceseActividad + t.formacion + t.mei);
+    const inicio = Math.ceil(cuotaMinima);
+
+    let mejor = todoNomina;
+    let nominaMinima = null;
+    for (let nomina = presupuesto - paso; nomina >= inicio; nomina -= paso) {
+      const r = repartoSocio(presupuesto, nomina, o);
+      if (!r.cubreCuota) continue;
+      nominaMinima = r;
+      if (r.neto > mejor.neto + 0.005) mejor = r;
+    }
+
+    // Lo que le queda según cuánto vaya a nómina, para el gráfico: unos 200 puntos y el mejor.
+    const curva = [];
+    if (nominaMinima) {
+      const desde = nominaMinima.nomina;
+      const puntos = 200;
+      for (let i = 0; i <= puntos; i++) {
+        const r = repartoSocio(presupuesto, desde + (presupuesto - desde) * i / puntos, o);
+        if (r.cubreCuota) curva.push({ nomina: r.nomina, dividendo: r.dividendo, neto: r.neto });
+      }
+      curva.push({ nomina: mejor.nomina, dividendo: mejor.dividendo, neto: mejor.neto });
+      curva.sort(function (a, b) { return a.nomina - b.nomina; });
+    }
+
+    return {
+      tipo: 'reparto',
+      presupuesto: presupuesto,
+      tipoIS: o.tipoIS,
+      dividendosEnReta: o.dividendosEnReta,
+      mejor: mejor,
+      todoNomina: todoNomina,
+      // Todo lo posible en dividendos: la nómina justa para la cuota. Nulo si no llega ni para eso.
+      nominaMinima: nominaMinima,
+      curva: curva,
+      // Por qué se para ahí: lo que dejarían 100 € más de nómina o 100 € más para dividendos.
+      margenNomina: repartoSocio(presupuesto + 100, mejor.nomina + 100, o).neto - mejor.neto,
+      margenDividendo: repartoSocio(presupuesto + 100, mejor.nomina, o).neto - mejor.neto
+    };
+  }
+
   // Donde el neto puede bajar de golpe: los tramos de retención y, para el socio, los del RETA.
   const CORTES_RETENCION = PARAMETROS.irpf.tablaRetenciones
     .map(function (fila) { return fila[0]; })
@@ -775,6 +881,7 @@
     calcularSocioDesdeCoste: calcularSocioDesdeCoste,
     irpfDividendos: irpfDividendos,
     calcularDividendos: calcularDividendos,
+    calcularReparto: calcularReparto,
     calcular: calcular,
     parseImporte: parseImporte,
     agruparMiles: agruparMiles

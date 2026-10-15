@@ -71,7 +71,8 @@ a { color: var(--link); }
   background: var(--surface-2); border-radius: 10px;
 }
 .pestanas a {
-  padding: 7px 18px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 7px 18px; border-radius: 8px; line-height: 1.25;
   color: var(--ink-2); text-decoration: none; font-size: 0.95rem; text-align: center;
 }
 .pestanas a:hover { color: var(--ink); }
@@ -175,6 +176,7 @@ details.mas[open] summary { margin-bottom: 12px; }
 .cifra-detalle { grid-column: 1 / -1; margin: 2px 0 0; font-size: 0.85rem; color: var(--muted); }
 .flecha { justify-self: center; color: var(--muted); line-height: 1; font-size: 0.9rem; }
 .flecha::before { content: "↓"; }
+.flecha.suma::before { content: "+"; }
 @container (min-width: 600px) {
   .flujo { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; }
   .cifra { display: block; padding: 12px 14px; }
@@ -182,6 +184,7 @@ details.mas[open] summary { margin-bottom: 12px; }
   .cifra-detalle { margin-top: 4px; }
   .flecha { align-self: center; font-size: 1.2rem; }
   .flecha::before { content: "→"; }
+  .flecha.suma::before { content: "+"; }
 }
 
 .proporcion { margin-top: 20px; }
@@ -227,12 +230,30 @@ th, td { padding: 7px 0; text-align: left; border-bottom: 1px solid var(--line);
 th + th, th + td, td + td { padding-left: 12px; }
 thead th { font-size: 0.85rem; font-weight: 600; color: var(--ink-2); }
 .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+thead .num { white-space: normal; }
 .total td, .total th { font-weight: 700; border-bottom-color: var(--ink-2); }
 .detalle th, .detalle td { font-size: 0.875rem; color: var(--ink-2); padding-top: 4px; padding-bottom: 4px; }
 .detalle th { padding-left: 14px; font-weight: 400; }
 .desglose:not(.con-detalle) .detalle { display: none; }
 .cabecera-tabla { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .cabecera-tabla h3 { flex: 1 1 10em; }
+
+/* Gráfico de una serie, con cruz y ficha al pasar el dedo o el ratón */
+.grafico { position: relative; margin-top: 8px; }
+.grafico svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+.grafico svg:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; border-radius: 4px; }
+.grafico text { fill: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.grafico .eje-linea { stroke: var(--line); stroke-width: 1; }
+.grafico .serie { fill: none; stroke: var(--serie-1); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.grafico .punto { fill: var(--serie-1); stroke: var(--surface); stroke-width: 2; }
+.grafico .etiqueta { fill: var(--ink); font-weight: 600; }
+.grafico .cruz { stroke: var(--ink-2); stroke-width: 1; }
+.ficha {
+  position: absolute; top: 0; pointer-events: none; white-space: nowrap;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--sombra);
+  padding: 6px 10px; font-size: 0.85rem; color: var(--ink-2);
+}
+.ficha strong { display: block; font-size: 1rem; color: var(--ink); }
 
 .avisos { display: grid; gap: 8px; margin-top: 16px; }
 .avisos:empty { display: none; }
