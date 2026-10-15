@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>¿Sueldo o dividendos? El mejor reparto para el socio en Bizkaia 2026</title>
+  <meta name="description" content="Cómo repartir entre nómina y dividendos lo que una sociedad de Bizkaia puede gastar en su socio para que le quede lo máximo en 2026, con el IRPF, la cuota de autónomo y el Impuesto sobre Sociedades.">
+  <link rel="canonical" href="https://davsed.github.io/calculadora-bizkaia/reparto.html">
+  <meta name="theme-color" content="#f3f2ee" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_ES">
+  <meta property="og:url" content="https://davsed.github.io/calculadora-bizkaia/reparto.html">
+  <meta property="og:title" content="¿Sueldo o dividendos? El mejor reparto para el socio en Bizkaia 2026">
+  <meta property="og:description" content="El reparto entre nómina y dividendos con el que más le queda al socio, con el IRPF, la cuota de autónomo y el Impuesto sobre Sociedades de Bizkaia de 2026.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Ctext x='16' y='22.5' font-family='Arial,sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='white'%3E%E2%82%AC%3C/text%3E%3C/svg%3E">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "¿Sueldo o dividendos? El mejor reparto para el socio en Bizkaia 2026",
+    "url": "https://davsed.github.io/calculadora-bizkaia/reparto.html",
+    "description": "Calcula el reparto entre nómina y dividendos con el que más le queda al socio de una sociedad de Bizkaia en 2026, con el IRPF, la cuota de autónomo y el Impuesto sobre Sociedades.",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Web",
+    "inLanguage": "es",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+  }
+  </script>
+  <link rel="stylesheet" href="estilos.css?v=2026.11">
+</head>
+<body>
+  <div class="contenedor">
+    <header class="cabecera">
+      <nav class="pestanas" aria-label="Calculadoras">
+        <a href="./">Sueldo</a>
+        <a href="dividendos.html">Dividendos</a>
+        <a href="reparto.html" aria-current="page">Mejor reparto</a>
+      </nav>
+      <h1>¿Sueldo o dividendos? El mejor reparto</h1>
+      <p class="entradilla">Cómo repartir entre nómina y dividendos lo que la sociedad puede gastar en su socio para que le quede lo máximo, con el IRPF, la cuota de autónomo y el Impuesto sobre Sociedades de Bizkaia de 2026.</p>
+    </header>
+
+    <main class="rejilla">
+      <form class="tarjeta formulario" id="formulario" novalidate>
+        <h2 class="oculto">Datos</h2>
+        <div class="campo">
+          <label class="etiqueta" for="importe">Lo que la sociedad puede gastar en el socio en el año</label>
+          <div class="importe">
+            <input id="importe" name="importe" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" spellcheck="false" value="30.000" aria-describedby="ayuda-importe">
+            <span class="sufijo" aria-hidden="true">€</span>
+          </div>
+          <p class="ayuda" id="ayuda-importe">Nómina y dividendos juntos, antes del Impuesto sobre Sociedades.</p>
+          <button type="button" class="resultado-rapido" id="resultado-rapido" hidden>
+            <span class="rapido-etiqueta" id="rapido-etiqueta"></span>
+            <span class="rapido-valor" id="rapido-valor"></span>
+            <span class="rapido-detalle" id="rapido-detalle"></span>
+            <span class="rapido-ir">Ver desglose <span aria-hidden="true">↓</span></span>
+          </button>
+        </div>
+
+        <details class="plegable-movil opciones-extra" id="mas-opciones">
+          <summary>Más opciones <span class="resumen-opciones" id="resumen-opciones"></span></summary>
+          <div class="campo">
+            <label class="casilla" style="margin-top: 0"><input type="checkbox" id="dividendos-reta" name="dividendosReta" checked><span>Los dividendos cuentan para su cuota de autónomo</span></label>
+            <p class="ayuda">Si tiene al menos el 33&nbsp;% del capital, o el 25&nbsp;% siendo administrador.</p>
+          </div>
+          <div class="campo">
+            <label class="etiqueta" for="hijos">Hijos que conviven con el socio</label>
+            <select id="hijos" name="hijos">
+              <option value="0" selected>Ninguno</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6 o más</option>
+            </select>
+            <div id="opciones-hijos" hidden>
+              <label class="etiqueta" for="menores6" style="margin-top: 12px">De ellos, menores de 6 años</label>
+              <select id="menores6" name="menores6"></select>
+              <label class="casilla"><input type="checkbox" id="compartida" name="compartida" checked><span>El otro progenitor también aplica la deducción (se reparte a medias)</span></label>
+            </div>
+          </div>
+          <label class="etiqueta" for="tipo-is">Impuesto sobre Sociedades</label>
+          <div class="importe porcentaje">
+            <input class="campo-texto" id="tipo-is" name="tipoIS" type="text" inputmode="decimal" autocomplete="off" value="20" aria-describedby="ayuda-tipo-is">
+            <span class="sufijo" aria-hidden="true">%</span>
+          </div>
+          <p class="ayuda" id="ayuda-tipo-is">20&nbsp;% en las microempresas y pequeñas empresas; 24&nbsp;% en las demás. Con deducciones puede ser menos, pero una pequeña empresa no baja del 15&nbsp;%.</p>
+        </details>
+      </form>
+
+      <section class="tarjeta resultados" aria-labelledby="titulo-resultado">
+        <h2 id="titulo-resultado" class="oculto">Resultado</h2>
+        <p class="oculto" id="resumen" aria-live="polite"></p>
+
+        <div class="flujo">
+          <div class="cifra">
+            <p class="cifra-etiqueta">A nómina</p>
+            <p class="cifra-valor" id="cifra-nomina"></p>
+            <p class="cifra-detalle" id="detalle-nomina"></p>
+          </div>
+          <span class="flecha suma" aria-hidden="true"></span>
+          <div class="cifra">
+            <p class="cifra-etiqueta">A dividendos</p>
+            <p class="cifra-valor" id="cifra-dividendos"></p>
+            <p class="cifra-detalle" id="detalle-dividendos"></p>
+          </div>
+          <span class="flecha" aria-hidden="true"></span>
+          <div class="cifra cifra-neto">
+            <p class="cifra-etiqueta">Le queda</p>
+            <p class="cifra-valor" id="cifra-neto"></p>
+            <p class="cifra-detalle" id="detalle-neto"></p>
+          </div>
+        </div>
+
+        <p class="dato" id="comparacion"></p>
+        <div class="avisos" id="avisos"></div>
+
+        <h3>Lo que le queda según cuánto vaya a nómina</h3>
+        <p class="subtitulo">Al año. En horizontal, lo que va a nómina; el resto de lo que gasta la sociedad va a dividendos.</p>
+        <div class="grafico" id="grafico"></div>
+
+        <h3>El reparto, frente a todo en nómina</h3>
+        <div class="tabla-desliza">
+          <table id="tabla-reparto">
+            <thead><tr><th scope="col">Concepto</th><th scope="col" class="num">Mejor reparto</th><th scope="col" class="num">Todo en nómina</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <p class="dato" id="dato-marginal"></p>
+        <p class="dato"><button type="button" class="boton" id="compartir" hidden>Copiar enlace a este cálculo</button></p>
+      </section>
+    </main>
+
+    <section class="tarjeta info">
+      <details class="plegable-movil">
+        <summary><h2>Cómo se calcula</h2></summary>
+        <ul>
+          <li><strong>Qué se compara.</strong> Lo que la sociedad puede gastar en el socio se reparte entre nómina y dividendos. La nómina es gasto de la sociedad; los dividendos salen del beneficio después del Impuesto sobre Sociedades. Para cada reparto se calcula lo que le queda al socio en el año y se elige el que más le deja, que es el que menos paga entre Impuesto sobre Sociedades, IRPF y cuota de autónomo.</li>
+          <li><strong>La nómina</strong> se calcula como en la pestaña «Sueldo» para un socio: su sueldo bruto lleva la cuota de autónomo dentro, la cuota va por la base mínima de su tramo y el IRPF es el del trabajo, con la cuota como gasto.</li>
+          <li><strong>Los dividendos</strong>, como en la pestaña «Dividendos»: Impuesto sobre Sociedades, exención de 1.500 € y tarifa del ahorro.</li>
+          <li><strong>Lo que cruza los dos.</strong> Con más de 1.600 € de dividendos hay que hacer la declaración, así que la nómina de hasta 20.000 € también paga su IRPF. Y si el socio tiene al menos el 33&nbsp;% del capital, o el 25&nbsp;% siendo administrador, los dividendos íntegros suman a sus rendimientos para la cuota de autónomo, menos un 3&nbsp;% (Ley General de la Seguridad Social, art. 308.1.c): pueden subirle de tramo.</li>
+          <li><strong>Cómo se busca.</strong> Se prueban todos los repartos de 10 en 10 €, desde la nómina que justo paga la cuota de autónomo hasta todo en nómina. Ir euro a euro no basta, porque hay saltos (los tramos del RETA, los 20.000 € sin declarar, la bonificación del trabajo que se pierde entre 14.800 y 23.000 €). A igualdad, se queda con más nómina.</li>
+          <li><strong>Sin sueldo mínimo legal, pero con límites.</strong> Un socio con control está en el RETA y no le aplica el salario mínimo. Pero sociedad y socio son personas vinculadas y su trabajo se valora a precio de mercado (Norma Foral 11/2013, art. 42): un sueldo muy por debajo de lo que vale lo puede discutir Hacienda. Los dividendos salen del beneficio del año, y en una SL antes hay que dotar la reserva legal. Con la base mínima del RETA, la jubilación y las bajas también son las mínimas.</li>
+          <li><strong>No se incluyen</strong> una base del RETA distinta de la mínima, otras rentas del socio, las sociedades patrimoniales ni el momento de cobro: la nómina se cobra cada mes y los dividendos cuando la junta aprueba las cuentas.</li>
+        </ul>
+      </details>
+    </section>
+
+    <footer class="pie">
+      <p>Estimación orientativa con los parámetros de 2026: IRPF de la Norma Foral 13/2013 de Bizkaia, cuota de autónomo de la Orden PJC/297/2026 y la Ley General de la Seguridad Social, e Impuesto sobre Sociedades de la Norma Foral 11/2013. No sustituye al asesoramiento de un profesional ni al cálculo de la Hacienda Foral de Bizkaia. Revisada en octubre de 2026.</p>
+      <p><a href="https://github.com/davsed/calculadora-bizkaia">Código fuente en GitHub</a></p>
+    </footer>
+  </div>
+
+  <noscript><p style="text-align:center">La calculadora necesita JavaScript activado.</p></noscript>
+  <script>
+    // En pantalla ancha, lo que en el móvil va plegado se ve abierto desde el principio.
+    if (matchMedia('(min-width: 860px)').matches) document.querySelectorAll('.plegable-movil').forEach(function (d) { d.open = true; });
+  </script>
+  <script src="calculadora.js?v=2026.11"></script>
+  <script src="comun.js?v=2026.11"></script>
+  <script src="reparto.js?v=2026.11"></script>
+</body>
+</html>

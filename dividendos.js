@@ -111,7 +111,7 @@
     nodo.appendChild(el('p', { style: 'margin:0' }, [
       el('strong', { texto: 'Cuota de autónomo: ' }),
       document.createTextNode('con el 33 % del capital, o el 25 % siendo administrador, el dividendo suma unos ' +
-        euroRedondo(r.brutoAnual / 12) + ' al mes a sus rendimientos del RETA y la cuota puede subir al regularizar.')
+        euroRedondo(r.brutoAnual * (1 - P.reta.gastosGenericosSocietario) / 12) + ' al mes a sus rendimientos del RETA y la cuota puede subir al regularizar.')
     ]));
     caja.appendChild(nodo);
   }

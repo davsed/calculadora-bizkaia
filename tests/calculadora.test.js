@@ -462,3 +462,43 @@ test('dividendos: lo que le cuesta a la sociedad, con el Impuesto sobre Sociedad
     cerca(C.calcularDividendos({ modo: 'neto', importe: ida.netoAnual }).costeAnual, coste);
   }
 });
+
+test('socio: los dividendos que cuentan para el RETA y la obligación de declarar por otras rentas', () => {
+  // Con el 33 % del capital, los dividendos íntegros suman a sus rendimientos, menos el 3 %.
+  cerca(C.cotizacionReta(30000, { dividendosReta: 30000 }).rendimientoMensual, 60000 * 0.97 / 12);
+  assert.equal(C.cotizacionReta(30000, {}).rendimientoMensual, 30000 * 0.97 / 12);
+  // Con más de 1.600 € de dividendos hay que declarar, y la nómina de hasta 20.000 € paga su cuota.
+  const sinDeclarar = C.irpf(15000, 0, {});
+  const declarando = C.irpf(15000, 0, { obligadoPorOtrasRentas: true });
+  assert.equal(sinDeclarar.aPagar, 0);
+  assert.ok(declarando.obligadoADeclarar);
+  cerca(declarando.aPagar, declarando.cuotaLiquida);
+  assert.ok(declarando.aPagar > 0);
+});
+
+test('sueldo o dividendos: el mejor reparto', () => {
+  // Con 30.000 €, unos 20.300 € de nómina y el resto en dividendos: unos 410 € más que todo en nómina.
+  const r = C.calcularReparto({ importe: 30000 });
+  assert.ok(r.mejor.nomina > 20000 && r.mejor.nomina < 20700, String(r.mejor.nomina));
+  cerca(r.mejor.neto, 21494, 2);
+  cerca(r.todoNomina.neto, 21082, 2);
+  cerca(r.mejor.nomina + r.mejor.beneficio, 30000);
+  cerca(r.mejor.dividendo, r.mejor.beneficio * 0.8);
+  // Es el mejor de todos los repartos del gráfico.
+  for (const punto of r.curva) assert.ok(punto.neto <= r.mejor.neto + 0.01);
+
+  // Con 20.000 € todo va a nómina: sin dividendos tampoco hay que declarar.
+  assert.equal(C.calcularReparto({ importe: 20000 }).mejor.dividendo, 0);
+
+  // Que los dividendos cuenten para la cuota de autónomo cambia mucho el reparto.
+  const conReta = C.calcularReparto({ importe: 60000 });
+  const sinReta = C.calcularReparto({ importe: 60000, dividendosEnReta: false });
+  assert.ok(conReta.mejor.dividendo < 2000);
+  assert.ok(sinReta.mejor.dividendo > 10000);
+  assert.ok(sinReta.mejor.neto > conReta.mejor.neto);
+
+  // Si no llega ni para la cuota mínima de autónomo, no hay reparto posible.
+  const poco = C.calcularReparto({ importe: 3000 });
+  assert.equal(poco.nominaMinima, null);
+  assert.equal(poco.mejor.nomina, 3000);
+});
