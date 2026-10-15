@@ -433,3 +433,32 @@ test('dividendos: del neto que se quiere al bruto que hay que repartir', () => {
     cerca(desdeNeto.brutoAnual, bruto);
   }
 });
+
+test('dividendos: lo que le cuesta a la sociedad, con el Impuesto sobre Sociedades', () => {
+  // Con el 20 % de las pequeñas empresas, 10.000 € de beneficio dan 8.000 € de dividendo.
+  const r = C.calcularDividendos({ modo: 'coste', importe: 10000 });
+  assert.equal(r.tipoIS, 0.20);
+  cerca(r.impuestoSociedades, 2000);
+  cerca(r.brutoAnual, 8000);
+  cerca(r.irpf.cuota, 6500 * 0.19);
+  cerca(r.netoAnual, 8000 - 1235);
+  cerca(r.netoPorCada100Coste, 80 * 0.81);
+
+  // Desde el dividendo, el coste es el beneficio que hace falta para repartirlo.
+  const desdeBruto = C.calcularDividendos({ modo: 'bruto', importe: 8000 });
+  cerca(desdeBruto.costeAnual, 10000);
+  // Con el tipo general del 24 %.
+  const general = C.calcularDividendos({ modo: 'coste', importe: 10000, tipoIS: 0.24 });
+  cerca(general.brutoAnual, 7600);
+  // Un tipo fuera de rango se queda en el de las pequeñas empresas.
+  assert.equal(C.calcularDividendos({ modo: 'coste', importe: 10000, tipoIS: 1.5 }).tipoIS, 0.20);
+
+  // Para que le queden 10.000 €: 12.031,25 € de dividendo y 15.039,06 € de beneficio.
+  const neto = C.calcularDividendos({ modo: 'neto', importe: 10000 });
+  cerca(neto.brutoAnual, 12031.25);
+  cerca(neto.costeAnual, 12031.25 / 0.8);
+  for (const coste of [1000, 10000, 15039.06, 80000]) {
+    const ida = C.calcularDividendos({ modo: 'coste', importe: coste });
+    cerca(C.calcularDividendos({ modo: 'neto', importe: ida.netoAnual }).costeAnual, coste);
+  }
+});
