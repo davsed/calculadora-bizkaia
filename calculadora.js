@@ -363,8 +363,9 @@
   }
 
   // === Socio de su propia sociedad, dado de alta en el RETA ===
-  // Todo se calcula a partir de lo que paga la sociedad por su trabajo en el año: la
-  // nómina más, si la paga ella, la cuota de autónomo.
+  // Todo se calcula a partir de lo que paga la sociedad por su trabajo en el año, que es también
+  // su sueldo bruto: la cuota de autónomo es del socio, y si la paga la sociedad es sueldo en especie.
+  // Quién la pague solo cambia cómo se reparte la nómina entre dinero y especie.
 
   function tramoReta(rendimientoMensual) {
     const r = Math.round(rendimientoMensual * 100) / 100;
@@ -442,13 +443,13 @@
     const cuota = reta.cuotaAnual;
     // Para el IRPF, el rendimiento íntegro es todo lo que paga la sociedad y la cuota es gasto.
     const renta = irpf(costeAnual, cuota, o);
-    const bruto = o.cuotaPagaSociedad ? costeAnual - cuota : costeAnual;
+    const sueldoEnDinero = o.cuotaPagaSociedad ? costeAnual - cuota : costeAnual;
     const neto = costeAnual - cuota - renta.aPagar;
 
     const nomina = nominaSocio(costeAnual, cuota, renta.tipoRetencion, o);
     let pagaExtra = null;
     if (o.pagas === 14) {
-      pagaExtra = { bruto: bruto / 14, especie: 0, irpf: renta.tipoRetencion * bruto / 14, cuotaSocio: 0 };
+      pagaExtra = { bruto: sueldoEnDinero / 14, especie: 0, irpf: renta.tipoRetencion * sueldoEnDinero / 14, cuotaSocio: 0 };
       pagaExtra.neto = pagaExtra.bruto - pagaExtra.irpf;
       pagaExtra.disponible = pagaExtra.neto;
     }
@@ -476,7 +477,9 @@
       tipo: 'socio',
       opciones: o,
       costeAnual: costeAnual,
-      brutoAnual: bruto,
+      brutoAnual: costeAnual,
+      // Lo que cobra en dinero en la nómina: el bruto menos la cuota, si la paga la sociedad.
+      sueldoEnDinero: sueldoEnDinero,
       netoAnual: neto,
       reta: reta,
       irpf: renta,
@@ -554,7 +557,7 @@
 
   /**
    * Igual que `calcular`, para un socio en el RETA. El coste es lo que paga la sociedad por
-   * su trabajo; el bruto, el sueldo de la nómina (sin la cuota, aunque la pague la sociedad).
+   * su trabajo y es también el bruto, con la cuota dentro, la pague quien la pague.
    */
   function calcularSocio(entrada) {
     const o = normalizarOpciones(entrada);
@@ -568,10 +571,7 @@
         : function (c) { return netoAnualSocio(c, o); };
       coste = invertir(f, importe, CORTES_SOCIO);
     } else if (entrada.modo === 'bruto') {
-      const bruto = mensual ? importe * o.pagas : importe;
-      coste = o.cuotaPagaSociedad
-        ? invertir(function (c) { return c - cotizacionReta(c, o).cuotaAnual; }, bruto, CORTES_SOCIO)
-        : bruto;
+      coste = mensual ? importe * o.pagas : importe;
     } else {
       coste = mensual ? importe * 12 : importe;
     }
