@@ -68,7 +68,7 @@
   // Textos que cambian entre asalariado y socio.
   function textos(esSocio) {
     return esSocio
-      ? { pagador: 'la sociedad', persona: 'el socio', alPersona: 'al socio', cuesta: 'Cuesta a la sociedad', bruto: 'Sueldo en nómina', llega: 'Llega al socio' }
+      ? { pagador: 'la sociedad', persona: 'el socio', alPersona: 'al socio', cuesta: 'Cuesta a la sociedad', bruto: 'Sueldo bruto', llega: 'Llega al socio' }
       : { pagador: 'la empresa', persona: 'el trabajador', alPersona: 'al trabajador', cuesta: 'Cuesta a la empresa', bruto: 'Sueldo bruto', llega: 'Llega al trabajador' };
   }
 
@@ -117,7 +117,7 @@
       coste: { anual: 'Coste anual para la empresa', mensual: 'Coste mensual para la empresa' }
     },
     socio: {
-      bruto: { anual: 'Sueldo bruto anual en nómina', mensual: 'Sueldo bruto mensual en nómina' },
+      bruto: { anual: 'Sueldo bruto anual', mensual: 'Sueldo bruto mensual' },
       neto: { anual: 'Neto anual del socio', mensual: 'Neto mensual del socio' },
       coste: { anual: 'Coste anual para la sociedad', mensual: 'Coste mensual para la sociedad' }
     }
@@ -125,8 +125,8 @@
 
   function ayudaImporte(e) {
     if (e.tipo === 'socio') {
-      if (e.modo === 'bruto') return 'Sin contar la cuota de autónomo, aunque la pague la sociedad.' + (e.periodo === 'mensual' && e.pagas === 14 ? ' Es el de cada una de las 14 pagas.' : '');
-      if (e.modo === 'coste') return 'Todo lo que paga la sociedad por su trabajo: la nómina y, si la paga ella, la cuota.' + (e.periodo === 'mensual' ? ' Media al mes.' : '');
+      if (e.modo === 'bruto') return 'Con la cuota de autónomo dentro, la pague quien la pague. Es lo mismo que el coste para la sociedad.' + (e.periodo === 'mensual' && e.pagas === 14 ? ' El anual entre las 14 pagas.' : '');
+      if (e.modo === 'coste') return 'Todo lo que paga la sociedad por su trabajo, con la cuota de autónomo. Es también su sueldo bruto.' + (e.periodo === 'mensual' ? ' Media al mes.' : '');
       return e.periodo === 'mensual'
         ? 'Lo que le queda en un mes normal, ya pagada la cuota de autónomo.'
         : 'Lo que le queda en el año, contando la cuota y la declaración de la renta.';
@@ -189,8 +189,9 @@
     $('cifra-coste').textContent = euroRedondo(r.costeAnual);
     $('detalle-coste').textContent = 'al año · ' + euroRedondo(r.costeAnual / 12) + ' al mes de media';
     $('cifra-bruto').textContent = euroRedondo(r.brutoAnual);
-    $('detalle-bruto').textContent = 'al año · ' + euroRedondo(r.brutoAnual / pagas) + ' × ' + pagas + ' pagas' +
-      (esSocio && r.opciones.cuotaPagaSociedad ? ', sin la cuota' : '');
+    const enDinero = esSocio ? r.sueldoEnDinero : r.brutoAnual;
+    $('detalle-bruto').textContent = 'al año · ' + euroRedondo(enDinero / pagas) + ' × ' + pagas + ' pagas' +
+      (esSocio && r.opciones.cuotaPagaSociedad ? ' + la cuota' : '');
     $('cifra-neto').textContent = euroRedondo(r.netoAnual);
     $('detalle-neto').textContent = 'al año · ' + euroRedondo(r.nomina.disponible === undefined ? r.nomina.neto : r.nomina.disponible) + ' al mes' +
       (r.pagaExtra ? ' y 2 pagas extra de ' + euroRedondo(r.pagaExtra.neto) : '');
@@ -317,8 +318,8 @@
       {
         nombre: 'Coste total para la sociedad', valor: r.costeAnual, desde: 0, color: '--gris-dato', clase: 'total',
         texto: o.cuotaPagaSociedad
-          ? 'La nómina, ' + dinero(r.brutoAnual) + ', más la cuota de autónomo, que paga la sociedad.'
-          : 'La nómina del socio. La cuota de autónomo la paga el socio aparte, de su bolsillo.'
+          ? 'Es su sueldo bruto: la nómina, ' + dinero(r.sueldoEnDinero) + ' en dinero, más la cuota de autónomo, que paga la sociedad y cuenta como sueldo en especie.'
+          : 'Es su sueldo bruto, todo en dinero. La cuota de autónomo la paga el socio de su bolsillo.'
       },
       {
         signo: '−', leido: 'menos', nombre: 'Cuota de autónomo (RETA)', valor: cuota, desde: trasCuota, color: '--serie-3',
@@ -327,8 +328,8 @@
       {
         signo: '=', leido: 'igual a', nombre: 'Rendimiento neto del trabajo', valor: trasCuota, desde: 0, color: '--gris-dato', clase: 'total',
         texto: o.cuotaPagaSociedad
-          ? 'Es el sueldo bruto de la nómina: ' + dinero(r.brutoAnual / o.pagas) + ' en cada una de las ' + o.pagas + ' pagas.'
-          : 'La nómina menos la cuota de autónomo, que el IRPF resta como gasto.'
+          ? 'Lo que cobra en dinero, ' + dinero(r.sueldoEnDinero / o.pagas) + ' en cada una de las ' + o.pagas + ' pagas: el bruto menos la cuota, que el IRPF resta como gasto.'
+          : 'El bruto menos la cuota de autónomo, que el IRPF resta como gasto.'
       },
       {
         signo: '−', leido: 'menos', nombre: 'IRPF', valor: r.irpf.aPagar, desde: r.netoAnual, color: '--serie-2',
@@ -394,10 +395,14 @@
         ['Neto', n.neto, x && x.neto, 'total']
       ];
     } else if (r.opciones.cuotaPagaSociedad) {
+      // Como en la nómina: la cuota se devenga como especie, lleva retención y se descuenta.
       filas = [
-        ['Bruto', n.bruto, x && x.bruto],
+        ['Sueldo en dinero', n.bruto, x && x.bruto],
+        ['Cuota de autónomo, en especie', n.especie, x && x.especie],
+        ['Total devengado', n.bruto + n.especie, x && x.bruto + x.especie],
         [retencion, -n.irpf, x && -x.irpf],
-        ['Neto en la cuenta', n.neto, x && x.neto, 'total']
+        ['Cuota de autónomo, que paga la sociedad', -n.especie, x && -x.especie],
+        ['Le queda, ya pagada la cuota', n.disponible, x && x.disponible, 'total']
       ];
     } else {
       filas = [
@@ -405,7 +410,7 @@
         [retencion, -n.irpf, x && -x.irpf],
         ['Neto de la nómina', n.neto, x && x.neto],
         ['Cuota de autónomo', -n.cuotaSocio, x && -x.cuotaSocio],
-        ['Le queda', n.disponible, x && x.disponible, 'total']
+        ['Le queda, ya pagada la cuota', n.disponible, x && x.disponible, 'total']
       ];
     }
     $('tabla-nomina').querySelector('.columna-mes').textContent = x ? 'Mes normal' : 'Al mes';
@@ -423,8 +428,8 @@
     let nota = textoDeclaracion(r);
     if (esSocio && r.costeAnual > 0) {
       nota = (r.opciones.cuotaPagaSociedad
-        ? 'La sociedad paga además la cuota de autónomo, ' + dinero(n.especie) + ' al mes. Cuenta como sueldo en especie, así que también lleva retención ' +
-          'y para la tabla de retenciones se suma al bruto: el tipo se busca con ' + euroRedondo(r.costeAnual) + ' al año. '
+        ? 'La sociedad paga la cuota de autónomo, ' + dinero(n.especie) + ' al mes. Va en la nómina como sueldo en especie, lleva retención como el resto ' +
+          'y se descuenta, porque el socio no la cobra en dinero. '
         : 'El socio paga la cuota de autónomo de su bolsillo, ' + dinero(n.cuotaSocio) + ' al mes. ') + nota;
     }
     $('nota-nomina').textContent = nota;
@@ -467,7 +472,7 @@
     detalle('Minoración de cuota', -ir.minoracion);
     if (o.hijos > 0) detalle('Deducción por hijos', -ir.deduccionDescendientes);
     detalle('Cuota líquida', ir.cuotaLiquida);
-    detalle('Retenido en nómina (' + porcentajeEntero.format(ir.tipoRetencion) + (r.tipo === 'socio' ? ' del rendimiento íntegro' : '') + ')', ir.retencion);
+    detalle('Retenido en nómina (' + porcentajeEntero.format(ir.tipoRetencion) + ')', ir.retencion);
     if (ir.obligadoADeclarar || ir.resultadoDeclaracion < -0.005) {
       detalle(ir.resultadoDeclaracion >= 0 ? 'A pagar en la declaración' : 'A devolver en la declaración', Math.abs(ir.resultadoDeclaracion));
     } else {
@@ -484,10 +489,10 @@
     if (r.tipo === 'socio') {
       const reta = r.reta;
       const tiposReta = P.reta.tipos;
-      fila('Coste para la sociedad', r.costeAnual, 'total');
+      fila('Sueldo bruto (coste para la sociedad)', r.costeAnual, 'total');
       if (o.cuotaPagaSociedad) {
-        detalle('Sueldo bruto en nómina', r.brutoAnual);
-        detalle('Cuota de autónomo que paga la sociedad', reta.cuotaAnual);
+        detalle('Nómina en dinero', r.sueldoEnDinero);
+        detalle('Cuota de autónomo que paga la sociedad (en especie)', reta.cuotaAnual);
       }
       fila('Cuota de autónomo (RETA)', -reta.cuotaAnual);
       detalle('Rendimientos para el RETA, al mes (' + reta.tramo.nombre.toLowerCase() + ')', reta.rendimientoMensual);

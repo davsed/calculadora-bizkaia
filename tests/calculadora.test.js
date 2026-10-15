@@ -285,7 +285,8 @@ test('socio: tramos del RETA y base mínima de los societarios', () => {
 
 test('socio: IRPF y neto con 50.000 € de coste para la sociedad', () => {
   const r = C.calcularSocioDesdeCoste(50000, { pagas: 12 });
-  cerca(r.brutoAnual, 50000 - 6052.95);
+  assert.equal(r.brutoAnual, 50000);
+  cerca(r.sueldoEnDinero, 50000 - 6052.95);
   cerca(r.irpf.rendimientoNeto, 50000 - 6052.95);
   cerca(r.irpf.aPagar, (50000 - 6052.95 - 3000 - 36160) * 0.35 + 9220.8 - 1615);
   assert.equal(r.irpf.tipoRetencion, 0.20);
@@ -300,15 +301,29 @@ test('socio: IRPF y neto con 50.000 € de coste para la sociedad', () => {
   cerca(pagaSocio.nomina.cuotaSocio, 6052.95 / 12);
 });
 
-test('socio: la cuota que paga la sociedad cuenta para buscar el tipo de retención', () => {
-  // 20.000 € de nómina más 5.384,23 € de cuota: la tabla se mira con 25.384,23 € (12 %), no con 20.000 € (0 %).
-  const r = C.calcular({ tipo: 'socio', modo: 'bruto', periodo: 'anual', importe: 20000 });
-  cerca(r.costeAnual, 25384.23);
+test('socio: el bruto lleva la cuota dentro, la pague quien la pague', () => {
+  // Quién pague la cuota solo cambia la nómina: ni el bruto, ni el coste, ni el IRPF, ni el neto.
+  const entrada = { tipo: 'socio', modo: 'bruto', periodo: 'anual', importe: 19999 };
+  const sociedad = C.calcular(entrada);
+  const socio = C.calcular(Object.assign({ cuotaPagaSociedad: false }, entrada));
+  for (const r of [sociedad, socio]) {
+    assert.equal(r.brutoAnual, 19999);
+    assert.equal(r.costeAnual, 19999);
+    assert.equal(r.irpf.tipoRetencion, 0);
+    assert.equal(r.irpf.aPagar, 0);
+  }
+  cerca(sociedad.netoAnual, socio.netoAnual);
+  cerca(sociedad.nomina.disponible * 12 + sociedad.pagaExtra.disponible * 2, socio.nomina.disponible * 12 + socio.pagaExtra.disponible * 2);
+  cerca(sociedad.sueldoEnDinero, 19999 - 5384.23);
+  assert.equal(socio.sueldoEnDinero, 19999);
+
+  // Con 25.384,23 € de bruto (20.000 € en dinero y la cuota mínima en especie) se retiene un 12 %
+  // de todo lo devengado, también de la especie.
+  const r = C.calcular({ tipo: 'socio', modo: 'bruto', periodo: 'anual', importe: 25384.23 });
+  cerca(r.sueldoEnDinero, 20000);
   assert.equal(r.irpf.tipoRetencion, 0.12);
+  cerca(r.nomina.irpf, 0.12 * (20000 / 14 + 5384.23 / 12));
   cerca(r.nomina.irpf * 12 + r.pagaExtra.irpf * 2, 0.12 * 25384.23);
-  assert.ok(r.irpf.obligadoADeclarar);
-  // Con el mismo dinero, si la cuota la paga el socio la retención es la misma.
-  assert.equal(C.calcularSocioDesdeCoste(r.costeAnual, { cuotaPagaSociedad: false }).irpf.tipoRetencion, 0.12);
 });
 
 test('socio: las nóminas, la cuota y la declaración dan el neto del año', () => {
