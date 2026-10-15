@@ -125,8 +125,8 @@
 
   function ayudaImporte(e) {
     if (e.tipo === 'socio') {
-      if (e.modo === 'bruto') return 'Con la cuota de autónomo dentro, la pague quien la pague. Es lo mismo que el coste para la sociedad.' + (e.periodo === 'mensual' && e.pagas === 14 ? ' El anual entre las 14 pagas.' : '');
-      if (e.modo === 'coste') return 'Todo lo que paga la sociedad por su trabajo, con la cuota de autónomo. Es también su sueldo bruto.' + (e.periodo === 'mensual' ? ' Media al mes.' : '');
+      if (e.modo === 'bruto') return 'Con la cuota de autónomo dentro, la pague quien la pague.' + (e.periodo === 'mensual' && e.pagas === 14 ? ' El anual entre las 14 pagas.' : '');
+      if (e.modo === 'coste') return 'Con la cuota de autónomo: es también su sueldo bruto.' + (e.periodo === 'mensual' ? ' Media al mes.' : '');
       return e.periodo === 'mensual'
         ? 'Lo que le queda en un mes normal, ya pagada la cuota de autónomo.'
         : 'Lo que le queda en el año, contando la cuota y la declaración de la renta.';
@@ -138,7 +138,21 @@
       if (e.modo === 'coste') return 'La media al mes: el coste anual entre 12.';
     }
     if (e.modo === 'neto') return 'Lo que llega en el año, contando la declaración de la renta.';
-    return 'Puedes escribir 30000, 30.000 o 30.000,50.';
+    return '';
+  }
+
+  // Lo que hay dentro de «Más opciones», para verlo con el bloque plegado.
+  function resumenOpciones(e, r) {
+    const hijos = e.hijos === 0 ? 'sin hijos' : e.hijos === 1 ? '1 hijo' : (e.hijos === 6 ? '6 o más' : e.hijos) + ' hijos';
+    const partes = [e.pagas + ' pagas', hijos];
+    if (e.tipo === 'socio') {
+      partes.push(e.cuotaPagaSociedad ? 'cuota a cargo de la sociedad' : 'cuota a cargo del socio');
+      if (r.reta.base > r.reta.baseMinima + 0.005) partes.push('base de ' + dinero(r.reta.base) + ' al mes');
+    } else {
+      if (e.contrato === 'temporal') partes.push('contrato temporal');
+      if (campoAtEp.value.trim() !== ATEP_POR_DEFECTO) partes.push('AT/EP ' + campoAtEp.value.trim() + ' %');
+    }
+    return partes.join(' · ');
   }
 
   function textoBaseReta(e, r, baseValida) {
@@ -377,6 +391,33 @@
         el('p', { clase: 'paso-explicacion', texto: paso.texto })
       ]));
     });
+  }
+
+  // === Resultado al momento, debajo del importe (en una columna) ===
+
+  // Lo que no se ha escrito: el neto si se parte del bruto o del coste, y el bruto si se parte del neto.
+  function pintarResultadoRapido(e, r, valido) {
+    const boton = $('resultado-rapido');
+    boton.hidden = !(valido && r.costeAnual > 0);
+    if (boton.hidden) return;
+    const esSocio = r.tipo === 'socio';
+    const t = textos(esSocio);
+    const mensual = e.periodo === 'mensual';
+    let etiqueta, valor, detalle;
+    if (e.modo === 'neto') {
+      etiqueta = t.bruto;
+      valor = mensual ? r.brutoAnual / r.opciones.pagas : r.brutoAnual;
+      detalle = mensual ? 'al mes · ' + euroRedondo(r.brutoAnual) + ' al año' : 'al año';
+      detalle += esSocio ? ', con la cuota' : ' · cuesta ' + euroRedondo(r.costeAnual);
+    } else {
+      const netoMes = esSocio ? r.nomina.disponible : r.nomina.neto;
+      etiqueta = t.llega;
+      valor = mensual ? netoMes : r.netoAnual;
+      detalle = mensual ? 'al mes · ' + euroRedondo(r.netoAnual) + ' al año' : 'al año · ' + euroRedondo(netoMes) + ' al mes';
+    }
+    $('rapido-etiqueta').textContent = etiqueta;
+    $('rapido-valor').textContent = euroRedondo(valor);
+    $('rapido-detalle').textContent = detalle;
   }
 
   // === Nómina de cada mes ===
@@ -724,6 +765,8 @@
       sincronizarBaseReta(e, r, baseValida, evento);
     }
 
+    $('resumen-opciones').textContent = resumenOpciones(e, r);
+    pintarResultadoRapido(e, r, valido);
     pintarResumen(r);
     pintarAvisos(r);
     pintarCascada(r);
@@ -788,6 +831,40 @@
   formulario.addEventListener('submit', function (evento) { evento.preventDefault(); });
   formulario.addEventListener('input', alCambiar);
   formulario.addEventListener('change', alCambiar);
+
+  // La tecla Intro (o «OK» en el teclado del móvil) cierra el teclado para ver el resultado.
+  formulario.addEventListener('keydown', function (evento) {
+    if (evento.key === 'Enter' && evento.target.type === 'text') evento.target.blur();
+  });
+
+  // En pantallas táctiles, al tocar el importe se selecciona entero para escribir encima.
+  if (window.matchMedia('(pointer: coarse)').matches) {
+    campoImporte.addEventListener('focus', function () {
+      setTimeout(function () { campoImporte.select(); }, 0);
+    });
+  }
+
+  $('resultado-rapido').addEventListener('click', function () {
+    campoImporte.blur();
+    const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelector('.resultados').scrollIntoView({ behavior: suave ? 'smooth' : 'auto', block: 'start' });
+  });
+
+  const botonExplicaciones = $('ver-explicaciones');
+  botonExplicaciones.addEventListener('click', function () {
+    const abierto = document.querySelector('.resultados').classList.toggle('con-explicaciones');
+    botonExplicaciones.setAttribute('aria-expanded', String(abierto));
+    botonExplicaciones.textContent = abierto ? 'Ocultar' : 'Explicar';
+  });
+
+  // Lo que en el móvil va plegado se queda abierto en pantalla ancha, también al ensanchar la ventana.
+  const escritorio = window.matchMedia('(min-width: 860px)');
+  const plegables = document.querySelectorAll('.plegable-movil');
+  function abrirEnEscritorio() {
+    if (escritorio.matches) plegables.forEach(function (d) { d.open = true; });
+  }
+  plegables.forEach(function (d) { d.addEventListener('toggle', abrirEnEscritorio); });
+  escritorio.addEventListener('change', abrirEnEscritorio);
 
   const botonDetalle = $('ver-detalle');
   botonDetalle.addEventListener('click', function () {
