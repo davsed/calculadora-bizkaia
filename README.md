@@ -83,8 +83,8 @@ Los parámetros de los dividendos, en octubre de 2026: la tarifa del ahorro con 
 - `dividendos.html` y `dividendos.js`: la calculadora de dividendos del socio.
 - `reparto.html` y `reparto.js`: el mejor reparto entre sueldo y dividendos, con su gráfico.
 - `calculadora.js`: la lógica de cálculo, sin DOM. Se usa en el navegador y en los tests.
-- `comun.js`: lo que comparten las páginas (formato de importes, casillas de importe, bloques plegables en el móvil, enlace para compartir y los últimos datos de cada página, guardados en el navegador con `localStorage` para que sigan al cambiar de pestaña o volver otro día; un enlace con datos manda sobre lo guardado).
-- `estilos.css`: los estilos de las tres páginas.
+- `comun.js`: lo que comparten las páginas (formato de importes, casillas de importe, la barra de porcentajes, bloques plegables en el móvil, enlace para compartir y los últimos datos de cada página, guardados en el navegador con `localStorage` para que sigan al cambiar de pestaña o volver otro día; un enlace con datos manda sobre lo guardado).
+- `estilos.css`: los estilos de las tres páginas. En el móvil, cada página enseña en la primera pantalla, sin hacer scroll, las opciones, el resultado del año en tres cifras, la barra de porcentajes y el desglose principal (la nómina de cada mes en la de sueldo); lo demás sale con «Ver el cálculo completo» o «Ver más».
 - `tests/`: tests con `node:test`.
 
 ## Tests

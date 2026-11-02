@@ -191,13 +191,16 @@ details.mas[open] summary { margin-bottom: 12px; }
 .proporcion-titular { margin: 0 0 10px; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; }
 .proporcion-numero { font-size: 3rem; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
 .proporcion-texto { color: var(--ink-2); max-width: 36ch; }
-.medidor { display: flex; height: 20px; border-radius: 4px; overflow: hidden; background: var(--gris-dato); }
-.medidor-neto { height: 100%; background: var(--serie-1); border-radius: 0 4px 4px 0; box-shadow: 2px 0 0 var(--surface); }
-.medidor-leyenda {
-  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px;
-  margin-top: 8px; font-size: 0.875rem; color: var(--ink-2);
-}
-.muestra { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+/* Barra apilada: a dónde va cada euro, con 2 px de separación entre partes y los extremos redondeados. */
+.barra { display: flex; gap: 2px; height: 18px; }
+.barra span { flex: 1 1 0; min-width: 2px; }
+.barra span:first-child { border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
+.barra span:last-child { border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
+.leyenda { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 8px; font-size: 0.875rem; color: var(--ink-2); }
+.leyenda-parte { display: inline-flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; }
+.leyenda-pct { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.muestra { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+.leyenda .muestra { margin-right: 0; }
 
 /* Cascada: del coste al neto */
 .cascada { list-style: none; margin: 0; padding: 0; }
@@ -273,17 +276,6 @@ thead .num { white-space: normal; }
 .pie { margin-top: 24px; font-size: 0.85rem; color: var(--muted); }
 .pie p { margin: 0 0 6px; max-width: 75ch; }
 
-/* Resultado al momento, debajo del importe: solo en una columna. */
-.resultado-rapido {
-  width: 100%; margin-top: 10px; padding: 10px 14px; text-align: left; font: inherit; color: var(--ink); cursor: pointer;
-  grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: baseline;
-  background: var(--neto-fondo); border: 0; border-radius: 12px; box-shadow: inset 0 0 0 2px var(--serie-1);
-}
-.rapido-etiqueta { font-size: 0.9rem; color: var(--ink-2); }
-.rapido-valor { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
-.rapido-detalle { grid-column: 1; font-size: 0.85rem; color: var(--muted); }
-.rapido-ir { grid-column: 1 / -1; margin-top: 2px; font-size: 0.85rem; color: var(--link); }
-
 /* Bloques que en el móvil van plegados y en pantalla ancha se ven abiertos. */
 .plegable-movil > summary { cursor: pointer; }
 .plegable-movil > summary > h2 { display: inline; }
@@ -291,19 +283,70 @@ thead .num { white-space: normal; }
 .info .plegable-movil + .plegable-movil { margin-top: 24px; }
 .resumen-opciones { margin-left: 4px; font-weight: 400; font-size: 0.85rem; color: var(--muted); }
 
-.resultado-rapido, .solo-movil { display: none; }
+.solo-movil, .texto-corto { display: none; }
+/* En pantalla ancha no cambia nada; en el móvil pone el periodo al lado del importe. */
+.fila-importe { display: contents; }
+
+/* Una columna (móvil y tableta): en la primera pantalla, sin hacer scroll, las opciones, el resultado
+   del año, la barra de porcentajes y lo principal del desglose. Lo demás, con «Ver el cálculo completo». */
 @media (max-width: 859.98px) {
-  .contenedor { padding-top: 16px; }
-  .pestanas { width: 100%; }
-  .pestanas a { flex: 1 1 0; padding: 10px 8px; }
-  .entradilla, .solo-escritorio { display: none; }
-  .segmentado span { padding: 10px 4px; }
+  .contenedor { padding-top: 8px; }
+  .cabecera { margin-bottom: 10px; }
+  .pestanas { width: 100%; margin: 0; }
+  .pestanas a { flex: 1 1 0; padding: 7px 6px; }
+  .cabecera h1, #formulario > fieldset > legend, .fila-importe legend, .fila-importe .etiqueta {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+  .entradilla, .solo-escritorio, .texto-largo { display: none; }
+  .texto-corto { display: inline; }
+  .solo-movil { display: inline-block; }
+  .rejilla { gap: 10px; }
+  .tarjeta { padding: 12px; }
+
+  /* Formulario: los botones se explican solos y la ayuda del importe solo sale si hay un error. */
+  #formulario > fieldset { margin-bottom: 8px; }
+  #formulario > .campo { margin-bottom: 8px; }
+  .segmentado span { padding: 8px 4px; }
+  .fila-importe { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .fila-importe > fieldset { flex: none; margin: 0; }
+  .fila-importe > .campo { order: -1; flex: 1 1 auto; min-width: 0; margin: 0; }
+  .fila-importe .segmentado span { padding-left: 10px; padding-right: 10px; }
+  .importe input { font-size: 1.3rem; padding: 4px 34px 4px 10px; }
+  #ayuda-importe.ayuda { display: none; }
   select, .campo-texto { padding: 10px; }
   .boton { padding: 9px 14px; }
-  .resultado-rapido:not([hidden]) { display: grid; }
-  .solo-movil { display: inline-block; }
-  .opciones-extra { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px; }
-  .opciones-extra > summary { font-weight: 600; font-size: 0.95rem; padding: 4px 0; }
+  .opciones-extra { border-top: 1px solid var(--line); padding-top: 6px; margin-top: 0; }
+  .opciones-extra > summary { font-weight: 600; font-size: 0.95rem; padding: 2px 0; }
+  .opciones-extra[open] > summary { margin-bottom: 10px; }
+
+  /* Resultados: lo esencial primero y en este orden; el resto, a petición. */
+  .resultados { display: flex; flex-direction: column; }
+  .resultados > .flujo { order: 1; }
+  .resultados > .comparacion-corta { order: 2; margin-top: 8px; }
+  .resultados > .proporcion { order: 3; }
+  .resultados > .avisos { order: 4; }
+  .resultados > .bloque-principal { order: 5; }
+  .resultados > .ver-todo { order: 6; }
+  .resultados > .extra-movil { order: 7; }
+  .resultados:not(.con-todo) > .extra-movil, .resultados:not(.con-todo) .fila-extra { display: none; }
+  .ver-todo { display: block; width: 100%; margin-top: 12px; }
+  .flujo { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .flecha { display: none; }
+  .cifra { display: block; padding: 6px 9px; border-radius: 10px; }
+  .cifra-etiqueta { font-size: 0.78rem; }
+  .cifra-valor { margin-top: 1px; font-size: min(1.2rem, 4.6vw); }
+  .cifra-detalle { display: none; }
+  .proporcion { margin-top: 10px; }
+  .proporcion-titular { display: none; }
+  .barra { height: 16px; }
+  .leyenda { gap: 2px 10px; margin-top: 6px; font-size: 0.8rem; }
+  .leyenda-importe { display: none; }
+  .avisos { margin-top: 10px; gap: 6px; }
+  .aviso { padding: 7px 10px; font-size: 0.82rem; }
+  .bloque-principal > h3 { margin: 12px 0 0; font-size: 0.95rem; }
+  .bloque-principal table { font-size: 0.9rem; }
+  .bloque-principal th, .bloque-principal td { padding-top: 4px; padding-bottom: 4px; }
   .info .plegable-movil + .plegable-movil { margin-top: 16px; }
   /* Las explicaciones largas, solo si se piden. */
   .resultados:not(.con-explicaciones) .explicacion,
@@ -317,11 +360,11 @@ thead .num { white-space: normal; }
 
 @media (max-width: 480px) {
   h1 { font-size: 1.3rem; }
-  .tarjeta { padding: 16px; }
   .proporcion-numero { font-size: 2.6rem; }
 }
 /* En los móviles estrechos, un botón de opción que no cabe pasa a dos líneas y la fila iguala alturas. */
 @media (max-width: 380px) {
+  .pestanas a { font-size: 0.85rem; padding-left: 4px; padding-right: 4px; }
   .segmentado-auto label { display: flex; }
   .segmentado-auto span {
     flex: 1 1 auto; display: flex; align-items: center; justify-content: center;

@@ -27,7 +27,7 @@
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
   }
   </script>
-  <link rel="stylesheet" href="estilos.css?v=2026.13">
+  <link rel="stylesheet" href="estilos.css?v=2026.14">
 </head>
 <body>
   <div class="contenedor">
@@ -62,27 +62,23 @@
           </div>
         </fieldset>
 
-        <fieldset class="segmentado">
-          <legend>Periodo</legend>
-          <div class="opciones">
-            <label><input type="radio" name="periodo" value="anual" checked><span>Anual</span></label>
-            <label><input type="radio" name="periodo" value="mensual"><span>Mensual</span></label>
-          </div>
-        </fieldset>
+        <div class="fila-importe">
+          <fieldset class="segmentado">
+            <legend>Periodo</legend>
+            <div class="opciones">
+              <label><input type="radio" name="periodo" value="anual" checked><span>Anual</span></label>
+              <label><input type="radio" name="periodo" value="mensual"><span>Mensual</span></label>
+            </div>
+          </fieldset>
 
-        <div class="campo">
-          <label class="etiqueta" for="importe" id="etiqueta-importe">Sueldo bruto anual</label>
-          <div class="importe">
-            <input id="importe" name="importe" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" spellcheck="false" value="30.000" aria-describedby="ayuda-importe">
-            <span class="sufijo" aria-hidden="true">€</span>
+          <div class="campo">
+            <label class="etiqueta" for="importe" id="etiqueta-importe">Sueldo bruto anual</label>
+            <div class="importe">
+              <input id="importe" name="importe" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" spellcheck="false" value="30.000" aria-describedby="ayuda-importe">
+              <span class="sufijo" aria-hidden="true">€</span>
+            </div>
+            <p class="ayuda" id="ayuda-importe"></p>
           </div>
-          <p class="ayuda" id="ayuda-importe"></p>
-          <button type="button" class="resultado-rapido" id="resultado-rapido" hidden>
-            <span class="rapido-etiqueta" id="rapido-etiqueta"></span>
-            <span class="rapido-valor" id="rapido-valor"></span>
-            <span class="rapido-detalle" id="rapido-detalle"></span>
-            <span class="rapido-ir">Ver desglose <span aria-hidden="true">↓</span></span>
-          </button>
         </div>
 
         <details class="plegable-movil opciones-extra" id="mas-opciones">
@@ -191,45 +187,52 @@
             <span class="proporcion-numero" id="porcentaje-neto"></span>
             <span class="proporcion-texto" id="proporcion-texto">de lo que paga la empresa llega a la cuenta del trabajador</span>
           </p>
-          <div class="medidor" id="medidor" role="img"><span class="medidor-neto" id="medidor-neto"></span></div>
-          <div class="medidor-leyenda">
-            <span><span class="muestra" style="background: var(--serie-1)" aria-hidden="true"></span><span id="leyenda-neto"></span></span>
-            <span><span class="muestra" style="background: var(--gris-dato)" aria-hidden="true"></span><span id="leyenda-resto"></span></span>
-          </div>
+          <div class="barra" id="barra" role="img"></div>
+          <div class="leyenda" id="leyenda"></div>
         </div>
 
-        <p class="dato" id="comparacion" hidden></p>
+        <div class="extra-movil">
+          <p class="dato" id="comparacion" hidden></p>
+        </div>
         <div class="avisos" id="avisos"></div>
 
-        <div class="cabecera-tabla">
-          <h3 id="titulo-cascada">Del coste de la empresa al neto del trabajador</h3>
-          <button type="button" class="boton solo-movil" id="ver-explicaciones" aria-expanded="false">Explicar</button>
-        </div>
-        <p class="subtitulo explicacion">Importes del año y qué parte del coste total es cada uno</p>
-        <ol class="cascada" id="cascada"></ol>
-
-        <h3>La nómina de cada mes</h3>
-        <div class="tabla-desliza">
-          <table id="tabla-nomina">
-            <thead><tr><th scope="col">Concepto</th><th scope="col" class="num columna-mes">Mes normal</th><th scope="col" class="num columna-extra">Paga extra</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <p class="ayuda explicacion" id="nota-nomina"></p>
-
-        <div class="cabecera-tabla">
-          <h3>Cálculo detallado</h3>
-          <button type="button" class="boton" id="ver-detalle" aria-expanded="false" aria-controls="tabla-anual">Ver el detalle</button>
-        </div>
-        <div class="tabla-desliza">
-          <table id="tabla-anual" class="desglose">
-            <thead class="oculto"><tr><th scope="col">Concepto</th><th scope="col">Importe anual</th></tr></thead>
-            <tbody></tbody>
-          </table>
+        <div class="bloque-cascada extra-movil">
+          <div class="cabecera-tabla">
+            <h3 id="titulo-cascada">Del coste de la empresa al neto del trabajador</h3>
+            <button type="button" class="boton solo-movil" id="ver-explicaciones" aria-expanded="false">Explicar</button>
+          </div>
+          <p class="subtitulo explicacion">Importes del año y qué parte del coste total es cada uno</p>
+          <ol class="cascada" id="cascada"></ol>
         </div>
 
-        <p class="dato" id="dato-marginal"></p>
-        <p class="dato"><button type="button" class="boton" id="compartir" hidden>Copiar enlace a este cálculo</button></p>
+        <div class="bloque-principal">
+          <h3>La nómina de cada mes</h3>
+          <div class="tabla-desliza">
+            <table id="tabla-nomina">
+              <thead><tr><th scope="col">Concepto</th><th scope="col" class="num columna-mes">Mes normal</th><th scope="col" class="num columna-extra">Paga extra</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p class="ayuda explicacion" id="nota-nomina"></p>
+        </div>
+
+        <div class="extra-movil">
+          <div class="cabecera-tabla">
+            <h3>Cálculo detallado</h3>
+            <button type="button" class="boton" id="ver-detalle" aria-expanded="false" aria-controls="tabla-anual">Ver el detalle</button>
+          </div>
+          <div class="tabla-desliza">
+            <table id="tabla-anual" class="desglose">
+              <thead class="oculto"><tr><th scope="col">Concepto</th><th scope="col">Importe anual</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <p class="dato" id="dato-marginal"></p>
+          <p class="dato"><button type="button" class="boton" id="compartir" hidden>Copiar enlace a este cálculo</button></p>
+        </div>
+
+        <button type="button" class="boton solo-movil ver-todo" id="ver-todo" aria-expanded="false">Ver el cálculo completo</button>
       </section>
     </main>
 
@@ -276,8 +279,8 @@
     // En pantalla ancha, lo que en el móvil va plegado se ve abierto desde el principio.
     if (matchMedia('(min-width: 860px)').matches) document.querySelectorAll('.plegable-movil').forEach(function (d) { d.open = true; });
   </script>
-  <script src="calculadora.js?v=2026.13"></script>
-  <script src="comun.js?v=2026.13"></script>
-  <script src="app.js?v=2026.13"></script>
+  <script src="calculadora.js?v=2026.14"></script>
+  <script src="comun.js?v=2026.14"></script>
+  <script src="app.js?v=2026.14"></script>
 </body>
 </html>

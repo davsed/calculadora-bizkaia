@@ -42,6 +42,12 @@
     return nodo;
   }
 
+  // La cabecera de una fila de tabla. `nombre` es un texto o [largo, corto]: el corto, para el móvil.
+  function concepto(nombre) {
+    if (!Array.isArray(nombre)) return el('th', { scope: 'row', texto: nombre });
+    return el('th', { scope: 'row' }, [el('span', { clase: 'texto-largo', texto: nombre[0] }), el('span', { clase: 'texto-corto', texto: nombre[1] })]);
+  }
+
   // Los enlaces antiguos pueden traer "30000" o "2150.5": se muestran como "30.000" y "2.150,5".
   function cifraDeUrl(texto) {
     const valor = C.parseImporte(texto);
@@ -123,6 +129,46 @@
     });
   }
 
+  // === Barra de porcentajes ===
+
+  // Porcentajes en décimas que suman justo 100 (el método del resto mayor), para que la leyenda cuadre.
+  function decimasQueSuman(valores) {
+    const total = valores.reduce(function (s, v) { return s + v; }, 0);
+    if (!(total > 0)) return valores.map(function () { return 0; });
+    const brutas = valores.map(function (v) { return v / total * 1000; });
+    const decimas = brutas.map(Math.floor);
+    let falta = 1000 - decimas.reduce(function (s, v) { return s + v; }, 0);
+    brutas.map(function (b, i) { return [b - Math.floor(b), i]; })
+      .sort(function (a, b) { return b[0] - a[0]; })
+      .forEach(function (par) { if (falta > 0) { decimas[par[1]]++; falta--; } });
+    return decimas;
+  }
+
+  // Una barra apilada con lo que se lleva cada parte del total, y su leyenda con el nombre, el
+  // importe (que el móvil no enseña) y el porcentaje. partes: [{ nombre, valor, color }], con
+  // `corto` si en el móvil el nombre va abreviado.
+  function pintarBarra(barra, leyenda, partes) {
+    const visibles = partes.filter(function (p) { return p.valor > 0.5; });
+    const decimas = decimasQueSuman(visibles.map(function (p) { return p.valor; }));
+    barra.textContent = '';
+    leyenda.textContent = '';
+    const descripcion = [];
+    visibles.forEach(function (p, i) {
+      const pct = porcentaje.format(decimas[i] / 1000);
+      barra.appendChild(el('span', { style: 'flex-grow:' + decimas[i] + ';background:var(' + p.color + ')', title: p.nombre + ': ' + euroRedondo(p.valor) + ' (' + pct + ')' }));
+      leyenda.appendChild(el('span', { clase: 'leyenda-parte' }, [
+        el('span', { clase: 'muestra', style: 'background:var(' + p.color + ')', 'aria-hidden': 'true' }),
+        p.corto
+          ? el('span', { clase: 'leyenda-nombre' }, [el('span', { clase: 'texto-largo', texto: p.nombre }), el('span', { clase: 'texto-corto', texto: p.corto })])
+          : el('span', { clase: 'leyenda-nombre', texto: p.nombre }),
+        el('span', { clase: 'leyenda-importe', texto: euroRedondo(p.valor) }),
+        el('span', { clase: 'leyenda-pct', texto: pct })
+      ]));
+      descripcion.push(p.nombre + ': ' + pct);
+    });
+    barra.setAttribute('aria-label', descripcion.length ? descripcion.join(', ') : 'Sin datos');
+  }
+
   // === Botones y bloques ===
 
   // Un botón que pone o quita una clase y cambia su texto: textos = [cerrado, abierto].
@@ -175,11 +221,13 @@
     euroRedondo: euroRedondo,
     importeRedondo: importeRedondo,
     el: el,
+    concepto: concepto,
     cifraDeUrl: cifraDeUrl,
     escribirUrl: escribirUrl,
     datosIniciales: datosIniciales,
     prepararCampoImporte: prepararCampoImporte,
     prepararFormulario: prepararFormulario,
+    pintarBarra: pintarBarra,
     alternar: alternar,
     irA: irA,
     prepararPlegables: prepararPlegables,

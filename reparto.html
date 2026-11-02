@@ -27,7 +27,7 @@
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
   }
   </script>
-  <link rel="stylesheet" href="estilos.css?v=2026.13">
+  <link rel="stylesheet" href="estilos.css?v=2026.14">
 </head>
 <body>
   <div class="contenedor">
@@ -45,18 +45,12 @@
       <form class="tarjeta formulario" id="formulario" novalidate>
         <h2 class="oculto">Datos</h2>
         <div class="campo">
-          <label class="etiqueta" for="importe">Lo que la sociedad puede gastar en el socio en el año</label>
+          <label class="etiqueta" for="importe"><span class="texto-largo">Lo que la sociedad puede gastar en el socio en el año</span><span class="texto-corto">Lo que puede gastar la sociedad, al año</span></label>
           <div class="importe">
             <input id="importe" name="importe" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" spellcheck="false" value="30.000" aria-describedby="ayuda-importe">
             <span class="sufijo" aria-hidden="true">€</span>
           </div>
           <p class="ayuda" id="ayuda-importe">Nómina y dividendos juntos, antes del Impuesto sobre Sociedades.</p>
-          <button type="button" class="resultado-rapido" id="resultado-rapido" hidden>
-            <span class="rapido-etiqueta" id="rapido-etiqueta"></span>
-            <span class="rapido-valor" id="rapido-valor"></span>
-            <span class="rapido-detalle" id="rapido-detalle"></span>
-            <span class="rapido-ir">Ver desglose <span aria-hidden="true">↓</span></span>
-          </button>
         </div>
 
         <details class="plegable-movil opciones-extra" id="mas-opciones">
@@ -102,13 +96,13 @@
 
         <div class="flujo">
           <div class="cifra">
-            <p class="cifra-etiqueta">A nómina</p>
+            <p class="cifra-etiqueta"><span class="texto-largo">A nómina</span><span class="texto-corto">Nómina</span></p>
             <p class="cifra-valor" id="cifra-nomina"></p>
             <p class="cifra-detalle" id="detalle-nomina"></p>
           </div>
           <span class="flecha suma" aria-hidden="true"></span>
           <div class="cifra">
-            <p class="cifra-etiqueta">A dividendos</p>
+            <p class="cifra-etiqueta"><span class="texto-largo">A dividendos</span><span class="texto-corto">Dividendos</span></p>
             <p class="cifra-valor" id="cifra-dividendos"></p>
             <p class="cifra-detalle" id="detalle-dividendos"></p>
           </div>
@@ -120,23 +114,36 @@
           </div>
         </div>
 
-        <p class="dato" id="comparacion"></p>
-        <div class="avisos" id="avisos"></div>
+        <p class="dato comparacion-corta" id="comparacion"></p>
 
-        <h3>Lo que le queda según cuánto vaya a nómina</h3>
-        <p class="subtitulo">Al año. En horizontal, lo que va a nómina; el resto de lo que gasta la sociedad va a dividendos.</p>
-        <div class="grafico" id="grafico"></div>
-
-        <h3>El reparto, frente a todo en nómina</h3>
-        <div class="tabla-desliza">
-          <table id="tabla-reparto">
-            <thead><tr><th scope="col">Concepto</th><th scope="col" class="num">Mejor reparto</th><th scope="col" class="num">Todo en nómina</th></tr></thead>
-            <tbody></tbody>
-          </table>
+        <div class="proporcion">
+          <div class="barra" id="barra" role="img"></div>
+          <div class="leyenda" id="leyenda"></div>
         </div>
 
-        <p class="dato" id="dato-marginal"></p>
-        <p class="dato"><button type="button" class="boton" id="compartir" hidden>Copiar enlace a este cálculo</button></p>
+        <div class="extra-movil">
+          <div class="avisos" id="avisos"></div>
+          <h3>Lo que le queda según cuánto vaya a nómina</h3>
+          <p class="subtitulo">Al año. En horizontal, lo que va a nómina; el resto de lo que gasta la sociedad va a dividendos.</p>
+          <div class="grafico" id="grafico"></div>
+        </div>
+
+        <div class="bloque-principal">
+          <h3>El reparto, frente a todo en nómina</h3>
+          <div class="tabla-desliza">
+            <table id="tabla-reparto">
+              <thead><tr><th scope="col">Concepto</th><th scope="col" class="num"><span class="texto-largo">Mejor reparto</span><span class="texto-corto">Mejor</span></th><th scope="col" class="num"><span class="texto-largo">Todo en nómina</span><span class="texto-corto">Todo nómina</span></th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="extra-movil">
+          <p class="dato" id="dato-marginal"></p>
+          <p class="dato"><button type="button" class="boton" id="compartir" hidden>Copiar enlace a este cálculo</button></p>
+        </div>
+
+        <button type="button" class="boton solo-movil ver-todo" id="ver-todo" aria-expanded="false">Ver más</button>
       </section>
     </main>
 
@@ -167,8 +174,8 @@
     // En pantalla ancha, lo que en el móvil va plegado se ve abierto desde el principio.
     if (matchMedia('(min-width: 860px)').matches) document.querySelectorAll('.plegable-movil').forEach(function (d) { d.open = true; });
   </script>
-  <script src="calculadora.js?v=2026.13"></script>
-  <script src="comun.js?v=2026.13"></script>
-  <script src="reparto.js?v=2026.13"></script>
+  <script src="calculadora.js?v=2026.14"></script>
+  <script src="comun.js?v=2026.14"></script>
+  <script src="reparto.js?v=2026.14"></script>
 </body>
 </html>
