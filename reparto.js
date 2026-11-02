@@ -53,9 +53,9 @@
   }
 
   function resumenOpciones(e, r) {
-    const hijos = e.hijos === 0 ? 'sin hijos' : e.hijos === 1 ? '1 hijo' : (e.hijos === 6 ? '6 o más' : e.hijos) + ' hijos';
-    const capital = Number.isFinite(e.participacion) ? tipoCorto.format(e.participacion) + ' del capital' + (e.administrador ? ', administrador' : '') : null;
-    return [capital, hijos, 'IS al ' + tipoCorto.format(r.tipoIS)].filter(Boolean).join(' · ');
+    const hijos = e.hijos === 0 ? null : e.hijos === 1 ? '1 hijo' : (e.hijos === 6 ? '6 o más' : e.hijos) + ' hijos';
+    const capital = Number.isFinite(e.participacion) ? tipoCorto.format(e.participacion) + (e.administrador ? ', administrador' : '') : null;
+    return [capital, hijos, 'IS ' + tipoCorto.format(r.tipoIS)].filter(Boolean).join(' · ');
   }
 
   // === Resumen: nómina + dividendos → lo que le queda ===
@@ -74,32 +74,31 @@
       ? 'al año, el ' + porcentaje.format(m.neto / r.presupuesto) + ' de lo que gasta la sociedad'
       : 'al año';
 
+    // La comparación con todo en nómina; la de la nómina mínima, en el móvil no.
     const todo = r.todoNomina;
     const minima = r.nominaMinima;
-    let texto = '';
+    const comparacion = $('comparacion');
+    comparacion.textContent = '';
     if (r.presupuesto > 0 && minima) {
-      texto = m.beneficio > 0
-        ? 'Todo en nómina le dejaría ' + euroRedondo(todo.neto) + ': ' + euroRedondo(m.neto - todo.neto) + ' menos al año.'
-        : 'Lo mejor es todo en nómina.';
+      if (m.beneficio > 0) {
+        comparacion.appendChild(el('span', { clase: 'texto-largo', texto: 'Todo en nómina le dejaría ' + euroRedondo(todo.neto) + ': ' + euroRedondo(m.neto - todo.neto) + ' menos al año.' }));
+        comparacion.appendChild(el('span', { clase: 'texto-corto', texto: 'Todo en nómina: ' + euroRedondo(todo.neto) + ' (' + euroRedondo(m.neto - todo.neto) + ' menos).' }));
+      } else {
+        comparacion.appendChild(document.createTextNode('Lo mejor es todo en nómina.'));
+      }
       if (minima.nomina < m.nomina) {
-        texto += ' Con la nómina justa para la cuota (' + euroRedondo(minima.nomina) + ') y el resto en dividendos, ' + euroRedondo(minima.neto) + '.';
+        comparacion.appendChild(el('span', { clase: 'texto-largo', texto: ' Con la nómina justa para la cuota (' + euroRedondo(minima.nomina) +
+          ') y el resto en dividendos, ' + euroRedondo(minima.neto) + '.' }));
       }
     }
-    $('comparacion').textContent = texto;
-  }
 
-  // === Resultado al momento, debajo del importe (en una columna) ===
-
-  function pintarResultadoRapido(r, valido) {
-    const boton = $('resultado-rapido');
-    boton.hidden = !(valido && r.presupuesto > 0 && r.nominaMinima);
-    if (boton.hidden) return;
-    const m = r.mejor;
-    $('rapido-etiqueta').textContent = 'Le queda';
-    $('rapido-valor').textContent = euroRedondo(m.neto);
-    $('rapido-detalle').textContent = m.beneficio > 0
-      ? euroRedondo(m.nomina) + ' a nómina y ' + euroRedondo(m.beneficio) + ' a dividendos'
-      : 'todo en nómina';
+    // A dónde va lo que gasta la sociedad, con los colores de las otras pestañas.
+    I.pintarBarra($('barra'), $('leyenda'), [
+      { nombre: 'Le queda', valor: m.neto, color: '--serie-1' },
+      { nombre: 'IRPF', valor: m.irpfNomina + m.irpfDividendo, color: '--serie-2' },
+      { nombre: 'Cuota de autónomo', corto: 'Cuota', valor: m.cuotaReta, color: '--serie-3' },
+      { nombre: 'Impuesto sobre Sociedades', corto: 'Sociedades', valor: m.impuestoSociedades, color: '--serie-4' }
+    ]);
   }
 
   // === Avisos ===
@@ -271,12 +270,13 @@
     const b = r.todoNomina;
     const filas = [
       ['A nómina', a.nomina, b.nomina, ''],
-      ['Cuota de autónomo', -a.cuotaReta, -b.cuotaReta, 'detalle'],
-      ['IRPF de la nómina', -a.irpfNomina, -b.irpfNomina, 'detalle'],
-      ['A dividendos (beneficio)', a.beneficio, b.beneficio, ''],
-      ['Impuesto sobre Sociedades', -a.impuestoSociedades, -b.impuestoSociedades, 'detalle'],
-      ['IRPF del dividendo', -a.irpfDividendo, -b.irpfDividendo, 'detalle'],
-      ['Impuestos y cuota', -(a.cuotaReta + a.irpfNomina + a.impuestoSociedades + a.irpfDividendo),
+      // El detalle de cada impuesto, en el móvil solo con «Ver más».
+      [['Cuota de autónomo', 'Cuota'], -a.cuotaReta, -b.cuotaReta, 'detalle fila-extra'],
+      [['IRPF de la nómina', 'IRPF'], -a.irpfNomina, -b.irpfNomina, 'detalle fila-extra'],
+      [['A dividendos (beneficio)', 'A dividendos'], a.beneficio, b.beneficio, ''],
+      [['Impuesto sobre Sociedades', 'Sociedades'], -a.impuestoSociedades, -b.impuestoSociedades, 'detalle fila-extra'],
+      [['IRPF del dividendo', 'IRPF'], -a.irpfDividendo, -b.irpfDividendo, 'detalle fila-extra'],
+      [['Impuestos y cuota', 'Impuestos'], -(a.cuotaReta + a.irpfNomina + a.impuestoSociedades + a.irpfDividendo),
         -(b.cuotaReta + b.irpfNomina + b.impuestoSociedades + b.irpfDividendo), ''],
       ['Le queda', a.neto, b.neto, 'total']
     ];
@@ -284,7 +284,7 @@
     cuerpo.textContent = '';
     filas.forEach(function (f) {
       cuerpo.appendChild(el('tr', { clase: f[3] }, [
-        el('th', { scope: 'row', texto: f[0] }),
+        I.concepto(f[0]),
         el('td', { clase: 'num', texto: euroRedondo(f[1]) }),
         el('td', { clase: 'num', texto: euroRedondo(f[2]) })
       ]));
@@ -366,7 +366,6 @@
           (e.participacion >= C.PARAMETROS.reta.participacionDividendos - 1e-9 ? 'un 33 % o más del capital.' : 'un 25 % o más y es administrador.')
         : 'Sus dividendos no cuentan para su cuota de autónomo: haría falta el 33 % del capital, o el 25 % siendo administrador.';
     $('resumen-opciones').textContent = resumenOpciones(e, r);
-    pintarResultadoRapido(r, valido);
     pintarResumen(r);
     pintarAvisos(r);
     dibujarGrafico(r);
@@ -397,7 +396,9 @@
     if (evento.target === selectHijos) actualizarOpcionesHijos();
     calcularEnUnMomento();
   });
-  $('resultado-rapido').addEventListener('click', function () { I.irA(document.querySelector('.resultados')); });
+  I.alternar($('ver-todo'), document.querySelector('.resultados'), 'con-todo', ['Ver más', 'Ver menos']);
+  // El gráfico estaba oculto en el móvil: al enseñarlo, se dibuja con el ancho que tiene.
+  $('ver-todo').addEventListener('click', function () { if (ultimo) dibujarGrafico(ultimo); });
   // Si se cambia de pestaña antes de que dé tiempo a calcular, lo escrito se guarda igual.
   window.addEventListener('pagehide', function () { escribirUrl(leerEntrada()); });
   I.prepararPlegables();

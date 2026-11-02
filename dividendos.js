@@ -57,7 +57,7 @@
   function pintarResumen(r) {
     const ir = r.irpf;
     const hayDatos = r.costeAnual > 0;
-    // Redondeada a la décima de porcentaje, para que las dos partes de la leyenda sumen 100 %.
+    // Redondeada a la décima de porcentaje, como en la leyenda de la barra.
     const parte = hayDatos ? Math.round(r.netoAnual / r.costeAnual * 1000) / 1000 : 0;
     $('cifra-coste').textContent = euroRedondo(r.costeAnual);
     $('detalle-coste').textContent = 'beneficio antes del Impuesto sobre Sociedades (' + tipoCorto.format(r.tipoIS) + '): ' + euroRedondo(r.impuestoSociedades);
@@ -67,35 +67,11 @@
     $('detalle-neto').textContent = 'tras la renta, que sale ' + textoRenta(ir.resultadoDeclaracion);
 
     $('porcentaje-neto').textContent = hayDatos ? porcentaje.format(parte) : '—';
-    $('medidor-neto').style.width = Math.max(0, Math.min(1, parte)) * 100 + '%';
-    $('medidor').setAttribute('aria-label', hayDatos
-      ? porcentaje.format(parte) + ' para el socio y ' + porcentaje.format(1 - parte) + ' en Impuesto sobre Sociedades e IRPF'
-      : 'Sin datos');
-    $('leyenda-neto').textContent = 'Para el socio: ' + euroRedondo(r.netoAnual) + (hayDatos ? ' (' + porcentaje.format(parte) + ')' : '');
-    $('leyenda-resto').textContent = 'Sociedades e IRPF: ' + euroRedondo(r.impuestoSociedades + ir.cuota) +
-      (hayDatos ? ' (' + porcentaje.format(1 - parte) + ')' : '');
-  }
-
-  // === Resultado al momento, debajo del importe (en una columna) ===
-
-  // Lo que no se ha escrito: lo que le queda, o lo que le cuesta a la sociedad si se parte de ahí.
-  function pintarResultadoRapido(e, r, valido) {
-    const boton = $('resultado-rapido');
-    boton.hidden = !(valido && r.costeAnual > 0);
-    if (boton.hidden) return;
-    let etiqueta = 'Le queda';
-    let valor = r.netoAnual;
-    let detalle = 'tras la renta · le cuesta ' + euroRedondo(r.costeAnual) + ' a la sociedad';
-    if (e.modo === 'coste') {
-      detalle = 'tras la renta · dividendo de ' + euroRedondo(r.brutoAnual) + ' brutos';
-    } else if (e.modo === 'neto') {
-      etiqueta = 'Le cuesta a la sociedad';
-      valor = r.costeAnual;
-      detalle = 'antes del Impuesto sobre Sociedades · dividendo de ' + euroRedondo(r.brutoAnual) + ' brutos';
-    }
-    $('rapido-etiqueta').textContent = etiqueta;
-    $('rapido-valor').textContent = euroRedondo(valor);
-    $('rapido-detalle').textContent = detalle;
+    I.pintarBarra($('barra'), $('leyenda'), [
+      { nombre: 'Le queda', valor: r.netoAnual, color: '--serie-1' },
+      { nombre: 'IRPF', valor: ir.cuota, color: '--serie-2' },
+      { nombre: 'Impuesto sobre Sociedades', corto: 'Sociedades', valor: r.impuestoSociedades, color: '--serie-4' }
+    ]);
   }
 
   // === Avisos ===
@@ -132,22 +108,23 @@
     const ir = r.irpf;
     const filas = [];
     const fila = function (nombre, valor, clase) { filas.push({ nombre: nombre, valor: valor, clase: clase || '' }); };
-    fila('Beneficio antes de impuestos', r.costeAnual, 'total');
-    fila('Impuesto sobre Sociedades (' + tipoCorto.format(r.tipoIS) + ')', -r.impuestoSociedades);
+    fila(['Beneficio antes de impuestos', 'Beneficio'], r.costeAnual, 'total');
+    fila(['Impuesto sobre Sociedades (' + tipoCorto.format(r.tipoIS) + ')', 'Sociedades (' + tipoCorto.format(r.tipoIS) + ')'], -r.impuestoSociedades);
     fila('Dividendo bruto', r.brutoAnual, 'total');
-    fila('Exento (hasta ' + importeRedondo(P.irpf.exencionDividendos) + ' al año)', -ir.exento);
-    fila('Base del ahorro', ir.baseAhorro);
-    ir.tramos.forEach(function (t) { fila(nombreTramo(t), t.cuota, 'detalle'); });
+    // La exención, la base y los tramos, en el móvil solo con «Ver más».
+    fila(['Exento (hasta ' + importeRedondo(P.irpf.exencionDividendos) + ' al año)', 'Exento'], -ir.exento, 'fila-extra');
+    fila('Base del ahorro', ir.baseAhorro, 'fila-extra');
+    ir.tramos.forEach(function (t) { fila(nombreTramo(t), t.cuota, 'detalle fila-extra'); });
     fila('IRPF del año', ir.cuota, 'total');
-    fila('Retenido al cobrar (' + tipoCorto.format(P.irpf.retencionDividendos) + ')', ir.retencion);
-    fila(ir.resultadoDeclaracion >= 0 ? 'A pagar en la declaración' : 'A devolver en la declaración', Math.abs(ir.resultadoDeclaracion));
+    fila(['Retenido al cobrar (' + tipoCorto.format(P.irpf.retencionDividendos) + ')', 'Retenido (' + tipoCorto.format(P.irpf.retencionDividendos) + ')'], ir.retencion);
+    fila(ir.resultadoDeclaracion >= 0 ? ['A pagar en la declaración', 'A pagar en la renta'] : ['A devolver en la declaración', 'A devolver en la renta'], Math.abs(ir.resultadoDeclaracion));
     fila('Le queda', r.netoAnual, 'total');
 
     const cuerpo = $('tabla-irpf').tBodies[0];
     cuerpo.textContent = '';
     filas.forEach(function (f) {
       cuerpo.appendChild(el('tr', { clase: f.clase }, [
-        el('th', { scope: 'row', texto: f.nombre }),
+        I.concepto(f.nombre),
         el('td', { clase: 'num', texto: dinero(f.valor) })
       ]));
     });
@@ -216,8 +193,7 @@
     campoTipoIS.setAttribute('aria-invalid', String(!tipoValido));
 
     const r = C.calcularDividendos({ modo: e.modo, importe: valido ? e.importe : 0, tipoIS: tipoValido ? e.tipoIS : undefined });
-    $('resumen-opciones').textContent = 'Impuesto sobre Sociedades al ' + tipoCorto.format(r.tipoIS);
-    pintarResultadoRapido(e, r, valido);
+    $('resumen-opciones').textContent = 'Sociedades al ' + tipoCorto.format(r.tipoIS);
     pintarResumen(r);
     pintarAvisos(r);
     pintarDesglose(r);
@@ -238,7 +214,7 @@
   I.prepararFormulario(formulario);
   formulario.addEventListener('input', calcular);
   formulario.addEventListener('change', calcular);
-  $('resultado-rapido').addEventListener('click', function () { I.irA(document.querySelector('.resultados')); });
+  I.alternar($('ver-todo'), document.querySelector('.resultados'), 'con-todo', ['Ver más', 'Ver menos']);
   I.prepararPlegables();
   I.prepararCompartir($('compartir'));
 

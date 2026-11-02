@@ -31,6 +31,13 @@
     return partes.length > 1 ? partes.slice(0, -1).join(', ') + ' y ' + partes[partes.length - 1] : partes.join('');
   }
 
+  // Una etiqueta con su versión larga y la corta del móvil; el CSS enseña una u otra.
+  function etiquetar(nodo, largo, corto) {
+    nodo.textContent = '';
+    nodo.appendChild(el('span', { clase: 'texto-largo', texto: largo }));
+    nodo.appendChild(el('span', { clase: 'texto-corto', texto: corto }));
+  }
+
   // Textos que cambian entre asalariado y socio.
   function textos(esSocio) {
     return esSocio
@@ -109,10 +116,10 @@
 
   // Lo que hay dentro de «Más opciones», para verlo con el bloque plegado.
   function resumenOpciones(e, r) {
-    const hijos = e.hijos === 0 ? 'sin hijos' : e.hijos === 1 ? '1 hijo' : (e.hijos === 6 ? '6 o más' : e.hijos) + ' hijos';
-    const partes = [e.pagas + ' pagas', hijos];
+    const partes = [e.pagas + ' pagas'];
+    if (e.hijos > 0) partes.push(e.hijos === 1 ? '1 hijo' : (e.hijos === 6 ? '6 o más' : e.hijos) + ' hijos');
     if (e.tipo === 'socio') {
-      partes.push(e.cuotaPagaSociedad ? 'cuota a cargo de la sociedad' : 'cuota a cargo del socio');
+      partes.push(e.cuotaPagaSociedad ? 'cuota: sociedad' : 'cuota: socio');
       if (r.reta.base > r.reta.baseMinima + 0.005) partes.push('base de ' + dinero(r.reta.base) + ' al mes');
     } else {
       if (e.contrato === 'temporal') partes.push('contrato temporal');
@@ -163,9 +170,9 @@
     const hayDatos = r.costeAnual > 0;
     const parte = hayDatos ? r.netoAnual / r.costeAnual : 0;
 
-    $('etiqueta-cifra-coste').textContent = t.cuesta;
-    $('etiqueta-cifra-bruto').textContent = t.bruto;
-    $('etiqueta-cifra-neto').textContent = t.llega;
+    etiquetar($('etiqueta-cifra-coste'), t.cuesta, 'Coste');
+    etiquetar($('etiqueta-cifra-bruto'), t.bruto, 'Bruto');
+    etiquetar($('etiqueta-cifra-neto'), t.llega, 'Neto');
     $('cifra-coste').textContent = euroRedondo(r.costeAnual);
     $('detalle-coste').textContent = 'al año · ' + euroRedondo(r.costeAnual / 12) + ' al mes de media';
     $('cifra-bruto').textContent = euroRedondo(r.brutoAnual);
@@ -178,14 +185,19 @@
 
     $('porcentaje-neto').textContent = hayDatos ? porcentaje.format(parte) : '—';
     $('proporcion-texto').textContent = 'de lo que paga ' + t.pagador + ' llega a la cuenta ' + (esSocio ? 'del socio' : 'del trabajador');
-    $('medidor-neto').style.width = Math.max(0, Math.min(1, parte)) * 100 + '%';
-    const resto = esSocio ? 'Cuota de autónomo e IRPF' : 'Impuestos y cotizaciones';
-    $('medidor').setAttribute('aria-label', hayDatos
-      ? porcentaje.format(parte) + ' para ' + t.persona + ' y ' + porcentaje.format(1 - parte) + ' en ' + resto.toLowerCase()
-      : 'Sin datos');
-    $('leyenda-neto').textContent = 'Para ' + t.persona + ': ' + euroRedondo(r.netoAnual) + (hayDatos ? ' (' + porcentaje.format(parte) + ')' : '');
-    $('leyenda-resto').textContent = resto + ': ' + euroRedondo(r.costeAnual - r.netoAnual) +
-      (hayDatos ? ' (' + porcentaje.format(1 - parte) + ')' : '');
+    // A dónde va cada euro de lo que cuesta, con los colores de la cascada.
+    I.pintarBarra($('barra'), $('leyenda'), esSocio
+      ? [
+          { nombre: 'Neto', valor: r.netoAnual, color: '--serie-1' },
+          { nombre: 'IRPF', valor: r.irpf.aPagar, color: '--serie-2' },
+          { nombre: 'Cuota de autónomo', corto: 'Cuota', valor: r.reta.cuotaAnual, color: '--serie-3' }
+        ]
+      : [
+          { nombre: 'Neto', valor: r.netoAnual, color: '--serie-1' },
+          { nombre: 'IRPF', valor: r.irpf.aPagar, color: '--serie-2' },
+          { nombre: 'SS trabajador', valor: r.cotizaciones.totalTrabajador, color: '--serie-3' },
+          { nombre: 'SS empresa', valor: r.cotizaciones.totalEmpresa, color: '--serie-4' }
+        ]);
 
     const comparacion = $('comparacion');
     comparacion.hidden = !(esSocio && r.comparacionAsalariado);
@@ -359,40 +371,14 @@
     });
   }
 
-  // === Resultado al momento, debajo del importe (en una columna) ===
-
-  // Lo que no se ha escrito: el neto si se parte del bruto o del coste, y el bruto si se parte del neto.
-  function pintarResultadoRapido(e, r, valido) {
-    const boton = $('resultado-rapido');
-    boton.hidden = !(valido && r.costeAnual > 0);
-    if (boton.hidden) return;
-    const esSocio = r.tipo === 'socio';
-    const t = textos(esSocio);
-    const mensual = e.periodo === 'mensual';
-    let etiqueta, valor, detalle;
-    if (e.modo === 'neto') {
-      etiqueta = t.bruto;
-      valor = mensual ? r.brutoAnual / r.opciones.pagas : r.brutoAnual;
-      detalle = mensual ? 'al mes · ' + euroRedondo(r.brutoAnual) + ' al año' : 'al año';
-      detalle += esSocio ? ', con la cuota' : ' · cuesta ' + euroRedondo(r.costeAnual);
-    } else {
-      const netoMes = esSocio ? r.nomina.disponible : r.nomina.neto;
-      etiqueta = t.llega;
-      valor = mensual ? netoMes : r.netoAnual;
-      detalle = mensual ? 'al mes · ' + euroRedondo(r.netoAnual) + ' al año' : 'al año · ' + euroRedondo(netoMes) + ' al mes';
-    }
-    $('rapido-etiqueta').textContent = etiqueta;
-    $('rapido-valor').textContent = euroRedondo(valor);
-    $('rapido-detalle').textContent = detalle;
-  }
-
   // === Nómina de cada mes ===
 
   function pintarNomina(r) {
     const esSocio = r.tipo === 'socio';
     const n = r.nomina;
     const x = r.pagaExtra;
-    const retencion = 'Retención IRPF (' + porcentajeEntero.format(r.irpf.tipoRetencion) + ')';
+    // En el móvil, más corta, para que quepa en una línea.
+    const retencion = ['Retención IRPF (' + porcentajeEntero.format(r.irpf.tipoRetencion) + ')', 'IRPF (' + porcentajeEntero.format(r.irpf.tipoRetencion) + ')'];
     let filas;
     if (!esSocio) {
       filas = [
@@ -404,20 +390,20 @@
     } else if (r.opciones.cuotaPagaSociedad) {
       // Como en la nómina: la cuota se devenga como especie, lleva retención y se descuenta.
       filas = [
-        ['Sueldo en dinero', n.bruto, x && x.bruto],
-        ['Cuota de autónomo, en especie', n.especie, x && x.especie],
-        ['Total devengado', n.bruto + n.especie, x && x.bruto + x.especie],
+        [['Sueldo en dinero', 'Sueldo'], n.bruto, x && x.bruto],
+        [['Cuota de autónomo, en especie', 'Cuota (especie)'], n.especie, x && x.especie],
+        [['Total devengado', 'Devengado'], n.bruto + n.especie, x && x.bruto + x.especie],
         [retencion, -n.irpf, x && -x.irpf],
-        ['Cuota de autónomo, que paga la sociedad', -n.especie, x && -x.especie],
-        ['Le queda, ya pagada la cuota', n.disponible, x && x.disponible, 'total']
+        [['Cuota de autónomo, que paga la sociedad', 'Cuota pagada'], -n.especie, x && -x.especie],
+        [['Le queda, ya pagada la cuota', 'Le queda'], n.disponible, x && x.disponible, 'total']
       ];
     } else {
       filas = [
         ['Bruto', n.bruto, x && x.bruto],
         [retencion, -n.irpf, x && -x.irpf],
-        ['Neto de la nómina', n.neto, x && x.neto],
-        ['Cuota de autónomo', -n.cuotaSocio, x && -x.cuotaSocio],
-        ['Le queda, ya pagada la cuota', n.disponible, x && x.disponible, 'total']
+        [['Neto de la nómina', 'Neto nómina'], n.neto, x && x.neto],
+        [['Cuota de autónomo', 'Cuota'], -n.cuotaSocio, x && -x.cuotaSocio],
+        [['Le queda, ya pagada la cuota', 'Le queda'], n.disponible, x && x.disponible, 'total']
       ];
     }
     $('tabla-nomina').querySelector('.columna-mes').textContent = x ? 'Mes normal' : 'Al mes';
@@ -425,7 +411,7 @@
     cuerpo.textContent = '';
     filas.forEach(function (fila) {
       cuerpo.appendChild(el('tr', { clase: fila[3] || '' }, [
-        el('th', { scope: 'row', texto: fila[0] }),
+        I.concepto(fila[0]),
         el('td', { clase: 'num', texto: dinero(fila[1]) }),
         x ? el('td', { clase: 'num', texto: dinero(fila[2]) }) : null
       ]));
@@ -725,7 +711,6 @@
     }
 
     $('resumen-opciones').textContent = resumenOpciones(e, r);
-    pintarResultadoRapido(e, r, valido);
     pintarResumen(r);
     pintarAvisos(r);
     pintarCascada(r);
@@ -762,7 +747,7 @@
   formulario.addEventListener('input', alCambiar);
   formulario.addEventListener('change', alCambiar);
 
-  $('resultado-rapido').addEventListener('click', function () { I.irA(document.querySelector('.resultados')); });
+  I.alternar($('ver-todo'), document.querySelector('.resultados'), 'con-todo', ['Ver el cálculo completo', 'Ocultar el cálculo completo']);
   I.alternar($('ver-explicaciones'), document.querySelector('.resultados'), 'con-explicaciones', ['Explicar', 'Ocultar']);
   I.alternar($('ver-detalle'), $('tabla-anual'), 'con-detalle', ['Ver el detalle', 'Ocultar el detalle']);
   I.prepararPlegables();

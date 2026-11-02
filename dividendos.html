@@ -27,7 +27,7 @@
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
   }
   </script>
-  <link rel="stylesheet" href="estilos.css?v=2026.13">
+  <link rel="stylesheet" href="estilos.css?v=2026.14">
 </head>
 <body>
   <div class="contenedor">
@@ -53,19 +53,15 @@
           </div>
         </fieldset>
 
-        <div class="campo">
-          <label class="etiqueta" for="importe" id="etiqueta-importe">Su dividendo bruto del año</label>
-          <div class="importe">
-            <input id="importe" name="importe" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" spellcheck="false" value="10.000" aria-describedby="ayuda-importe">
-            <span class="sufijo" aria-hidden="true">€</span>
+        <div class="fila-importe">
+          <div class="campo">
+            <label class="etiqueta" for="importe" id="etiqueta-importe">Su dividendo bruto del año</label>
+            <div class="importe">
+              <input id="importe" name="importe" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" spellcheck="false" value="10.000" aria-describedby="ayuda-importe">
+              <span class="sufijo" aria-hidden="true">€</span>
+            </div>
+            <p class="ayuda" id="ayuda-importe"></p>
           </div>
-          <p class="ayuda" id="ayuda-importe"></p>
-          <button type="button" class="resultado-rapido" id="resultado-rapido" hidden>
-            <span class="rapido-etiqueta" id="rapido-etiqueta"></span>
-            <span class="rapido-valor" id="rapido-valor"></span>
-            <span class="rapido-detalle" id="rapido-detalle"></span>
-            <span class="rapido-ir">Ver desglose <span aria-hidden="true">↓</span></span>
-          </button>
         </div>
 
         <details class="plegable-movil opciones-extra" id="mas-opciones">
@@ -85,13 +81,13 @@
 
         <div class="flujo">
           <div class="cifra">
-            <p class="cifra-etiqueta">Le cuesta a la sociedad</p>
+            <p class="cifra-etiqueta"><span class="texto-largo">Le cuesta a la sociedad</span><span class="texto-corto">Coste</span></p>
             <p class="cifra-valor" id="cifra-coste"></p>
             <p class="cifra-detalle" id="detalle-coste"></p>
           </div>
           <span class="flecha" aria-hidden="true"></span>
           <div class="cifra">
-            <p class="cifra-etiqueta">Dividendo bruto</p>
+            <p class="cifra-etiqueta"><span class="texto-largo">Dividendo bruto</span><span class="texto-corto">Dividendo</span></p>
             <p class="cifra-valor" id="cifra-bruto"></p>
             <p class="cifra-detalle" id="detalle-bruto"></p>
           </div>
@@ -108,26 +104,31 @@
             <span class="proporcion-numero" id="porcentaje-neto"></span>
             <span class="proporcion-texto">de lo que le cuesta a la sociedad le queda al socio</span>
           </p>
-          <div class="medidor" id="medidor" role="img"><span class="medidor-neto" id="medidor-neto"></span></div>
-          <div class="medidor-leyenda">
-            <span><span class="muestra" style="background: var(--serie-1)" aria-hidden="true"></span><span id="leyenda-neto"></span></span>
-            <span><span class="muestra" style="background: var(--gris-dato)" aria-hidden="true"></span><span id="leyenda-resto"></span></span>
+          <div class="barra" id="barra" role="img"></div>
+          <div class="leyenda" id="leyenda"></div>
+        </div>
+
+        <div class="extra-movil">
+          <div class="avisos" id="avisos"></div>
+        </div>
+
+        <div class="bloque-principal">
+          <h3>Del beneficio a lo que le queda</h3>
+          <div class="tabla-desliza">
+            <table id="tabla-irpf">
+              <thead class="oculto"><tr><th scope="col">Concepto</th><th scope="col">Importe anual</th></tr></thead>
+              <tbody></tbody>
+            </table>
           </div>
         </div>
 
-        <div class="avisos" id="avisos"></div>
-
-        <h3>Del beneficio a lo que le queda</h3>
-        <div class="tabla-desliza">
-          <table id="tabla-irpf">
-            <thead class="oculto"><tr><th scope="col">Concepto</th><th scope="col">Importe anual</th></tr></thead>
-            <tbody></tbody>
-          </table>
+        <div class="extra-movil">
+          <p class="ayuda" id="nota-declaracion"></p>
+          <p class="dato" id="dato-marginal"></p>
+          <p class="dato"><button type="button" class="boton" id="compartir" hidden>Copiar enlace a este cálculo</button></p>
         </div>
-        <p class="ayuda" id="nota-declaracion"></p>
 
-        <p class="dato" id="dato-marginal"></p>
-        <p class="dato"><button type="button" class="boton" id="compartir" hidden>Copiar enlace a este cálculo</button></p>
+        <button type="button" class="boton solo-movil ver-todo" id="ver-todo" aria-expanded="false">Ver más</button>
       </section>
     </main>
 
@@ -159,8 +160,8 @@
     // En pantalla ancha, lo que en el móvil va plegado se ve abierto desde el principio.
     if (matchMedia('(min-width: 860px)').matches) document.querySelectorAll('.plegable-movil').forEach(function (d) { d.open = true; });
   </script>
-  <script src="calculadora.js?v=2026.13"></script>
-  <script src="comun.js?v=2026.13"></script>
-  <script src="dividendos.js?v=2026.13"></script>
+  <script src="calculadora.js?v=2026.14"></script>
+  <script src="comun.js?v=2026.14"></script>
+  <script src="dividendos.js?v=2026.14"></script>
 </body>
 </html>
