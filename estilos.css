@@ -49,7 +49,7 @@ body {
   margin: 0;
   background: var(--page);
   color: var(--ink);
-  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 1rem/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-text-size-adjust: 100%;
 }
 a { color: var(--link); }
@@ -290,10 +290,14 @@ thead .num { white-space: normal; }
 /* Una columna (móvil y tableta): en la primera pantalla, sin hacer scroll, las opciones, el resultado
    del año, la barra de porcentajes y lo principal del desglose. Lo demás, con «Ver el cálculo completo». */
 @media (max-width: 859.98px) {
-  .contenedor { padding-top: 8px; }
-  .cabecera { margin-bottom: 10px; }
-  .pestanas { width: 100%; margin: 0; }
-  .pestanas a { flex: 1 1 0; padding: 7px 6px; }
+  /* El diseño está hecho para 390 px de ancho. En móviles más anchos, o con el zoom de pantalla bajo,
+     la letra base crece con el ancho (sin pasarse del alto) y, como las medidas van en rem, todo crece
+     en proporción: la misma pantalla, a su tamaño. */
+  html { font-size: clamp(16px, min(4.1vw, 2.35vh), 22px); font-size: clamp(16px, min(4.1vw, 2.35svh), 22px); }
+  .contenedor { padding: 0.5rem 1rem 3rem; }
+  .cabecera { margin-bottom: 0.625rem; }
+  .pestanas { width: 100%; margin: 0; gap: 0.125rem; padding: 0.1875rem; border-radius: 0.625rem; }
+  .pestanas a { flex: 1 1 0; padding: 0.4375rem 0.375rem; border-radius: 0.5rem; }
   .cabecera h1, #formulario > fieldset > legend, .fila-importe legend, .fila-importe .etiqueta {
     position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
     overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
@@ -301,53 +305,66 @@ thead .num { white-space: normal; }
   .entradilla, .solo-escritorio, .texto-largo { display: none; }
   .texto-corto { display: inline; }
   .solo-movil { display: inline-block; }
-  .rejilla { gap: 10px; }
-  .tarjeta { padding: 12px; }
+  .rejilla { gap: 0.625rem; }
+  .tarjeta { padding: 0.75rem; border-radius: 0.75rem; }
 
   /* Formulario: los botones se explican solos y la ayuda del importe solo sale si hay un error. */
-  #formulario > fieldset { margin-bottom: 8px; }
-  #formulario > .campo { margin-bottom: 8px; }
-  .segmentado span { padding: 8px 4px; }
-  .fila-importe { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  #formulario > fieldset { margin-bottom: 0.5rem; }
+  #formulario > .campo { margin-bottom: 0.5rem; }
+  .segmentado .opciones { gap: 0.125rem; padding: 0.1875rem; border-radius: 0.5625rem; }
+  .segmentado span { padding: 0.5rem 0.25rem; border-radius: 0.4375rem; }
+  .fila-importe { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
   .fila-importe > fieldset { flex: none; margin: 0; }
   .fila-importe > .campo { order: -1; flex: 1 1 auto; min-width: 0; margin: 0; }
-  .fila-importe .segmentado span { padding-left: 10px; padding-right: 10px; }
-  .importe input { font-size: 1.3rem; padding: 4px 34px 4px 10px; }
+  .fila-importe .segmentado span { padding-left: 0.625rem; padding-right: 0.625rem; }
+  .importe input { font-size: 1.3rem; padding: 0.25rem 2.125rem 0.25rem 0.625rem; border-radius: 0.5625rem; }
+  .importe .sufijo { right: 0.875rem; }
   #ayuda-importe.ayuda { display: none; }
-  select, .campo-texto { padding: 10px; }
-  .boton { padding: 9px 14px; }
-  .opciones-extra { border-top: 1px solid var(--line); padding-top: 6px; margin-top: 0; }
-  .opciones-extra > summary { font-weight: 600; font-size: 0.95rem; padding: 2px 0; }
-  .opciones-extra[open] > summary { margin-bottom: 10px; }
+  select, .campo-texto { padding: 0.625rem; border-radius: 0.5625rem; }
+  .casilla input { width: 1rem; height: 1rem; }
+  .boton { padding: 0.5625rem 0.875rem; border-radius: 0.5rem; }
+  .opciones-extra { border-top: 1px solid var(--line); padding-top: 0.375rem; margin-top: 0; }
+  .opciones-extra > summary { font-weight: 600; font-size: 0.95rem; padding: 0.125rem 0; }
+  .opciones-extra[open] > summary { margin-bottom: 0.625rem; }
+  .resumen-opciones { margin-left: 0.25rem; }
 
   /* Resultados: lo esencial primero y en este orden; el resto, a petición. */
   .resultados { display: flex; flex-direction: column; }
   .resultados > .flujo { order: 1; }
-  .resultados > .comparacion-corta { order: 2; margin-top: 8px; }
+  .resultados > .comparacion-corta { order: 2; margin-top: 0.5rem; }
   .resultados > .proporcion { order: 3; }
   .resultados > .avisos { order: 4; }
   .resultados > .bloque-principal { order: 5; }
   .resultados > .ver-todo { order: 6; }
   .resultados > .extra-movil { order: 7; }
   .resultados:not(.con-todo) > .extra-movil, .resultados:not(.con-todo) .fila-extra { display: none; }
-  .ver-todo { display: block; width: 100%; margin-top: 12px; }
-  .flujo { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .ver-todo { display: block; width: 100%; margin-top: 0.75rem; }
+  .flujo { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.375rem; }
   .flecha { display: none; }
-  .cifra { display: block; padding: 6px 9px; border-radius: 10px; }
+  .cifra { display: block; padding: 0.375rem 0.5625rem; border-radius: 0.625rem; }
   .cifra-etiqueta { font-size: 0.78rem; }
   .cifra-valor { margin-top: 1px; font-size: min(1.2rem, 4.6vw); }
   .cifra-detalle { display: none; }
-  .proporcion { margin-top: 10px; }
+  .proporcion { margin-top: 0.625rem; }
   .proporcion-titular { display: none; }
-  .barra { height: 16px; }
-  .leyenda { gap: 2px 10px; margin-top: 6px; font-size: 0.8rem; }
+  .barra { height: 1.125rem; }
+  .leyenda { gap: 0.125rem 0.625rem; margin-top: 0.375rem; font-size: 0.8rem; }
+  .muestra { width: 0.625rem; height: 0.625rem; }
   .leyenda-importe { display: none; }
-  .avisos { margin-top: 10px; gap: 6px; }
-  .aviso { padding: 7px 10px; font-size: 0.82rem; }
-  .bloque-principal > h3 { margin: 12px 0 0; font-size: 0.95rem; }
+  .avisos { margin-top: 0.625rem; gap: 0.375rem; }
+  .aviso { padding: 0.4375rem 0.625rem; font-size: 0.82rem; border-radius: 0.5625rem; }
+  .bloque-principal > h3 { margin: 0.75rem 0 0; font-size: 0.95rem; }
   .bloque-principal table { font-size: 0.9rem; }
-  .bloque-principal th, .bloque-principal td { padding-top: 4px; padding-bottom: 4px; }
-  .info .plegable-movil + .plegable-movil { margin-top: 16px; }
+  .bloque-principal th, .bloque-principal td { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+  .bloque-principal th + th, .bloque-principal th + td, .bloque-principal td + td { padding-left: 0.75rem; }
+  /* Lo que llega al final (el neto del mes, lo que le queda), resaltado. Todas las filas llevan el
+     mismo margen a los lados, para que las cifras sigan alineadas con la resaltada. */
+  .bloque-principal tr > :first-child { padding-left: 0.5rem; }
+  .bloque-principal tr > :last-child { padding-right: 0.5rem; }
+  .bloque-principal tbody tr:last-child > * { background: var(--neto-fondo); }
+  .bloque-principal tbody tr:last-child > :first-child { border-radius: 0.375rem 0 0 0.375rem; }
+  .bloque-principal tbody tr:last-child > :last-child { border-radius: 0 0.375rem 0.375rem 0; }
+  .info .plegable-movil + .plegable-movil { margin-top: 1rem; }
   /* Las explicaciones largas, solo si se piden. */
   .resultados:not(.con-explicaciones) .explicacion,
   .resultados:not(.con-explicaciones) .paso-explicacion { display: none; }
@@ -364,15 +381,18 @@ thead .num { white-space: normal; }
 }
 /* En los móviles estrechos, un botón de opción que no cabe pasa a dos líneas y la fila iguala alturas. */
 @media (max-width: 380px) {
-  .pestanas a { font-size: 0.85rem; padding-left: 4px; padding-right: 4px; }
+  .pestanas a { font-size: 0.85rem; padding-left: 0.25rem; padding-right: 0.25rem; }
   .segmentado-auto label { display: flex; }
   .segmentado-auto span {
     flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
-    white-space: normal; padding: 12px 4px; line-height: 1.25;
+    white-space: normal; padding: 0.75rem 0.25rem; line-height: 1.25;
   }
 }
 /* Que la nómina quepa sin deslizar en los móviles más estrechos. */
 @media (max-width: 360px) {
   table { font-size: 0.875rem; }
-  th + th, th + td, td + td { padding-left: 8px; }
+  th + th, th + td, td + td,
+  .bloque-principal th + th, .bloque-principal th + td, .bloque-principal td + td { padding-left: 0.5rem; }
+  .bloque-principal tr > :first-child { padding-left: 0.25rem; }
+  .bloque-principal tr > :last-child { padding-right: 0.25rem; }
 }

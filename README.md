@@ -84,7 +84,7 @@ Los parámetros de los dividendos, en octubre de 2026: la tarifa del ahorro con 
 - `reparto.html` y `reparto.js`: el mejor reparto entre sueldo y dividendos, con su gráfico.
 - `calculadora.js`: la lógica de cálculo, sin DOM. Se usa en el navegador y en los tests.
 - `comun.js`: lo que comparten las páginas (formato de importes, casillas de importe, la barra de porcentajes, bloques plegables en el móvil, enlace para compartir y los últimos datos de cada página, guardados en el navegador con `localStorage` para que sigan al cambiar de pestaña o volver otro día; un enlace con datos manda sobre lo guardado).
-- `estilos.css`: los estilos de las tres páginas. En el móvil, cada página enseña en la primera pantalla, sin hacer scroll, las opciones, el resultado del año en tres cifras, la barra de porcentajes y el desglose principal (la nómina de cada mes en la de sueldo); lo demás sale con «Ver el cálculo completo» o «Ver más».
+- `estilos.css`: los estilos de las tres páginas. En el móvil, cada página enseña en la primera pantalla, sin hacer scroll, las opciones, el resultado del año en tres cifras, la barra de porcentajes y el desglose principal (la nómina de cada mes en la de sueldo); lo demás sale con «Ver el cálculo completo» o «Ver más». El diseño del móvil está hecho para 390 px de ancho y en pantallas más anchas, o con el zoom de pantalla bajo, crece en proporción (la letra base va de 16 a 22 px según el ancho, sin pasarse del alto, y las medidas van en rem).
 - `tests/`: tests con `node:test`.
 
 ## Tests
